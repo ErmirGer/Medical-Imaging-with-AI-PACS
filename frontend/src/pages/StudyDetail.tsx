@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Database,
@@ -11,6 +11,8 @@ import {
   Thermometer,
   Wind,
   Cigarette,
+  Printer,
+  Layers,
 } from "lucide-react";
 import { api } from "../api";
 import Viewer from "../components/Viewer";
@@ -22,6 +24,7 @@ import type { Lang } from "../types";
 
 export default function StudyDetail() {
   const { id } = useParams();
+  const nav = useNavigate();
   const studyId = Number(id);
   const [lang, setLang] = useState<Lang>("en");
   const { data: study, isLoading } = useQuery({
@@ -32,9 +35,16 @@ export default function StudyDetail() {
     queryKey: ["comparison", studyId],
     queryFn: () => api.getComparison(studyId),
   });
+  const { data: patientStudies } = useQuery({
+    queryKey: ["patientStudies", study?.patient.id],
+    queryFn: () => api.patientStudies(study!.patient.id),
+    enabled: !!study,
+  });
 
   if (isLoading) return <p className="text-slate-500">Loading study…</p>;
   if (!study) return <p className="text-slate-500">Study not found.</p>;
+
+  const studies = patientStudies ?? [];
 
   return (
     <div>
@@ -53,8 +63,35 @@ export default function StudyDetail() {
             {study.modality}
             {study.region ? ` · ${study.region}` : ""}
           </p>
+          {studies.length > 1 && (
+            <div className="mt-2 inline-flex items-center gap-2">
+              <Layers size={14} className="text-slate-500" />
+              <span className="text-xs text-slate-500">
+                {studies.length} {lang === "sq" ? "studime" : "studies"}:
+              </span>
+              <select
+                value={studyId}
+                onChange={(e) => nav(`/study/${e.target.value}`)}
+                className="rounded-lg border border-edge bg-panel px-2 py-1 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
+              >
+                {studies.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {new Date(s.uploaded_at).toLocaleString()} · {s.modality}
+                    {s.region ? ` ${s.region}` : ""} · {s.risk_score} {s.risk_band}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.open(`/study/${studyId}/print`, "_blank")}
+            className="inline-flex items-center gap-2 rounded-lg border border-edge bg-panel px-3 py-1.5 text-sm text-slate-300 hover:text-slate-100"
+            title="Print full report"
+          >
+            <Printer size={15} /> {lang === "sq" ? "Printo" : "Print"}
+          </button>
           <div className="flex overflow-hidden rounded-lg border border-edge text-xs">
             {(["en", "sq"] as const).map((l) => (
               <button

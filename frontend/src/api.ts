@@ -43,6 +43,14 @@ export const api = {
     return json(await fetch(`${API_BASE}/api/studies/${id}`));
   },
 
+  async patientStudies(patientId: string): Promise<Study[]> {
+    return json(
+      await fetch(
+        `${API_BASE}/api/studies?patient_id=${encodeURIComponent(patientId)}`,
+      ),
+    );
+  },
+
   async getComparison(id: number): Promise<Comparison> {
     return json(await fetch(`${API_BASE}/api/studies/${id}/comparison`));
   },

@@ -220,6 +220,16 @@ async def create_study(
         if patient_id:
             patient = session.get(Patient, patient_id)
         if patient is None:
+            # group repeat uploads: reuse an existing patient with the same
+            # name + age + sex so multiple studies accumulate under one record
+            patient = session.exec(
+                select(Patient).where(
+                    Patient.name == name,
+                    Patient.age == age,
+                    Patient.sex == sex.upper(),
+                )
+            ).first()
+        if patient is None:
             patient = Patient(id=pid, name=name, age=age, sex=sex.upper())
             session.add(patient)
             session.commit()
@@ -247,9 +257,12 @@ async def create_study(
 
 
 @router.get("/studies", response_model=list[StudyOut])
-def list_studies(sort: str | None = None):
+def list_studies(sort: str | None = None, patient_id: str | None = None):
     with get_session() as session:
-        studies = session.exec(select(Study)).all()
+        query = select(Study)
+        if patient_id:
+            query = query.where(Study.patient_id == patient_id)
+        studies = session.exec(query).all()
         if sort == "risk":
             studies = sorted(studies, key=lambda s: s.risk_score, reverse=True)
         else:

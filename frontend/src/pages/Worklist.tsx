@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Database, Sparkles } from "lucide-react";
 import { api } from "../api";
 import RiskBadge from "../components/RiskBadge";
@@ -8,6 +8,7 @@ import type { Study } from "../types";
 
 export default function Worklist() {
   const qc = useQueryClient();
+  const nav = useNavigate();
   const { data: studies, isLoading } = useQuery({
     queryKey: ["studies"],
     queryFn: () => api.listStudies("risk"),
@@ -59,15 +60,13 @@ export default function Worklist() {
               {studies.map((s: Study) => (
                 <tr
                   key={s.id}
-                  className="border-t border-edge bg-surface/40 hover:bg-panel/60"
+                  onClick={() => nav(`/study/${s.id}`)}
+                  className="cursor-pointer border-t border-edge bg-surface/40 transition hover:bg-panel/60"
                 >
                   <td className="px-4 py-3">
-                    <Link
-                      to={`/study/${s.id}`}
-                      className="font-medium text-slate-100 hover:text-accent"
-                    >
+                    <span className="font-medium text-slate-100">
                       {s.patient.name}
-                    </Link>
+                    </span>
                     <div className="text-xs text-slate-500">
                       {s.patient.id} · {s.patient.age}/{s.patient.sex}
                     </div>

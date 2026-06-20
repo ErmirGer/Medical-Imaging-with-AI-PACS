@@ -9,6 +9,7 @@ import Upload from "./pages/Upload";
 import Worklist from "./pages/Worklist";
 import StudyDetail from "./pages/StudyDetail";
 import DepartmentBoard from "./pages/DepartmentBoard";
+import PrintReport from "./pages/PrintReport";
 
 function NavLink({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   const loc = useLocation();
@@ -33,7 +34,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-edge bg-surface/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-edge bg-surface/90 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 py-3">
           <Link to="/" className="mr-4 flex items-center gap-2">
             <div className="rounded-lg bg-accent/20 p-1.5">
@@ -75,11 +76,12 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-6">
+      <main className="mx-auto max-w-7xl px-6 py-6 print:max-w-none print:p-0">
         <Routes>
           <Route path="/" element={<Worklist />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/study/:id" element={<StudyDetail />} />
+          <Route path="/study/:id/print" element={<PrintReport />} />
           <Route path="/board" element={<DepartmentBoard />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
