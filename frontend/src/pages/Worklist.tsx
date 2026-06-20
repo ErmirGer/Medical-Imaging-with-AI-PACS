@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Database, Sparkles } from "lucide-react";
 import { api } from "../api";
 import RiskBadge from "../components/RiskBadge";
+import ClinicalSignals from "../components/ClinicalSignals";
 import type { Study } from "../types";
 
 export default function Worklist() {
@@ -48,6 +49,7 @@ export default function Worklist() {
               <tr>
                 <th className="px-4 py-3">Patient</th>
                 <th className="px-4 py-3">Top finding</th>
+                <th className="px-4 py-3">Signals</th>
                 <th className="px-4 py-3">Risk</th>
                 <th className="px-4 py-3">PACS</th>
                 <th className="px-4 py-3">Uploaded</th>
@@ -71,6 +73,9 @@ export default function Worklist() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-slate-300">{s.top_finding}</td>
+                  <td className="px-4 py-3">
+                    <ClinicalSignals clinical={s.clinical} size="xs" />
+                  </td>
                   <td className="px-4 py-3">
                     <RiskBadge score={s.risk_score} band={s.risk_band} />
                   </td>
