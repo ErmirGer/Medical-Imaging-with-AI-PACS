@@ -21,6 +21,7 @@ def png_to_dicom_bytes(
     patient_name: str,
     patient_id: str,
     study_uid: str | None = None,
+    modality: str = "DX",
 ) -> tuple[bytes, str]:
     arr = skimage.io.imread(path)
     if arr.ndim == 3:
@@ -39,9 +40,9 @@ def png_to_dicom_bytes(
     ds.SeriesInstanceUID = generate_uid()
     ds.SOPInstanceUID = fm.MediaStorageSOPInstanceUID
     ds.SOPClassUID = SecondaryCaptureImageStorage
-    ds.Modality = "DX"
+    ds.Modality = modality or "DX"
     ds.StudyDate = datetime.date.today().strftime("%Y%m%d")
-    ds.SeriesDescription = "RadGuard CXR"
+    ds.SeriesDescription = f"RadGuard {ds.Modality}"
     ds.Rows, ds.Columns = arr.shape
     ds.SamplesPerPixel = 1
     ds.PhotometricInterpretation = "MONOCHROME2"

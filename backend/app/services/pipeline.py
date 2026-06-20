@@ -10,7 +10,7 @@ import uuid
 from pathlib import Path
 
 from ..config import settings
-from . import inference, report
+from . import inference, report, vision
 from .dicom import png_to_dicom_bytes, push_to_orthanc
 
 log = logging.getLogger("radguard.pipeline")
@@ -35,31 +35,74 @@ def process(
     """
     token = uuid.uuid4().hex[:12]
 
-    # 2. predict
-    probs = inference.predict(src_path)
-    # 3. risk (fused with clinical context when provided)
-    risk = inference.risk_score(probs, clinical)
-    driver = risk["driver"]
+    # 1. Vision triage: figure out what this image actually IS (modality, body
+    #    region, whether it's a chest X-ray) before assuming the chest model applies.
+    vis = vision.analyze(src_path, patient, clinical)
+    is_chest = vis["is_chest_xray"] if vis else True  # no key/failed -> assume CXR
+    region = vis["body_region"] if vis else ""
+    if vis:
+        modality = vision.modality_to_dicom(vis["modality"])
 
-    # original + heatmap PNGs
     original_png = str(IMAGES_DIR / f"{token}_original.png")
     heatmap_png = str(IMAGES_DIR / f"{token}_heatmap.png")
-    try:
-        inference.save_original_png(src_path, original_png)
-    except Exception as exc:
-        log.warning("original png failed: %s", exc)
-        original_png = src_path
-    try:
-        inference.heatmap(src_path, driver, heatmap_png)
-    except Exception as exc:
-        log.warning("heatmap failed: %s", exc)
-        heatmap_png = original_png
+
+    if is_chest:
+        # --- Chest X-ray: specialized torchxrayvision model + Grad-CAM + deterministic risk
+        analysis_source = "model"
+        probs = inference.predict(src_path)
+        risk = inference.risk_score(probs, clinical)
+        driver = risk["driver"]
+        try:
+            inference.save_original_png(src_path, original_png)
+        except Exception as exc:
+            log.warning("original png failed: %s", exc)
+            original_png = src_path
+        try:
+            inference.heatmap(src_path, driver, heatmap_png)
+        except Exception as exc:
+            log.warning("heatmap failed: %s", exc)
+            heatmap_png = original_png
+        rep = report.generate(patient, risk, risk["top_findings"], clinical)
+    else:
+        # --- Anything else (hand X-ray, CT, MRI, ultrasound...): Claude vision is
+        #     the analyzer. No chest model, no Grad-CAM (would be meaningless).
+        analysis_source = "vision"
+        try:
+            inference.save_original_png(src_path, original_png)
+        except Exception as exc:
+            log.warning("original png failed: %s", exc)
+            original_png = src_path
+        heatmap_png = original_png  # no localization model for this modality/region
+        risk = {
+            "score": vis["risk_score"],
+            "base_score": vis["risk_score"],
+            "clinical_adjustment": 0,
+            "clinical_factors": [],
+            "band": vis["risk_band"],
+            "driver": vis["driver"],
+            # population_rate omitted on purpose — no population baseline for arbitrary findings
+            "top_findings": [
+                {
+                    "pathology": f["name"],
+                    "probability": f["probability"],
+                    "contribution": f["probability"],
+                }
+                for f in vis["findings"][:5]
+            ],
+        }
+        probs = {f["name"]: f["probability"] for f in vis["findings"]}
+        rep = {
+            "impression_en": vis["impression_en"],
+            "impression_sq": vis["impression_sq"],
+            "recommendation_en": vis["recommendation_en"],
+            "recommendation_sq": vis["recommendation_sq"],
+        }
 
     # 5. PNG -> DICOM + push to Orthanc
     pacs = {"study_instance_uid": "", "orthanc_id": "", "archived": False}
     try:
         dicom_bytes, sop_study_uid = png_to_dicom_bytes(
-            src_path, patient["name"], patient["id"], study_uid
+            src_path, patient["name"], patient["id"], study_uid, modality
         )
         res = push_to_orthanc(dicom_bytes, settings.ORTHANC_URL)
         pacs = {
@@ -72,14 +115,11 @@ def process(
         # still record the UID we generated so the study is PACS-ready
         try:
             _, sop_study_uid = png_to_dicom_bytes(
-                src_path, patient["name"], patient["id"], study_uid
+                src_path, patient["name"], patient["id"], study_uid, modality
             )
             pacs["study_instance_uid"] = sop_study_uid
         except Exception:
             pass
-
-    # 6. bilingual report (imaging + clinical fusion)
-    rep = report.generate(patient, risk, risk["top_findings"], clinical)
 
     return {
         "probs": probs,
@@ -90,4 +130,6 @@ def process(
         "report": rep,
         "clinical": clinical or {},
         "modality": modality,
+        "region": region,
+        "analysis_source": analysis_source,
     }

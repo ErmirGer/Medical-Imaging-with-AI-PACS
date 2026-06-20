@@ -45,6 +45,9 @@ export interface Study {
   id: number;
   patient: Patient;
   modality: string;
+  region?: string;
+  analysis_source?: "model" | "vision";
+  heatmap_available?: boolean;
   uploaded_at: string;
   risk_score: number;
   risk_base?: number;

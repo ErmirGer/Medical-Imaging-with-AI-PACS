@@ -1,6 +1,7 @@
 import type { Finding } from "../types";
 
 export default function FindingsList({ findings }: { findings: Finding[] }) {
+  const hasBaseline = findings.some((f) => f.population_rate != null);
   return (
     <div className="space-y-2.5">
       {findings.map((f) => {
@@ -38,10 +39,12 @@ export default function FindingsList({ findings }: { findings: Finding[] }) {
           </div>
         );
       })}
-      <p className="pt-1 text-[10px] text-slate-500">
-        <span className="mr-1 inline-block h-2 w-px bg-slate-300/70 align-middle" />
-        marks population baseline prevalence
-      </p>
+      {hasBaseline && (
+        <p className="pt-1 text-[10px] text-slate-500">
+          <span className="mr-1 inline-block h-2 w-px bg-slate-300/70 align-middle" />
+          marks population baseline prevalence
+        </p>
+      )}
     </div>
   );
 }

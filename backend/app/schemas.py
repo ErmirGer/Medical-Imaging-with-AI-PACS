@@ -14,7 +14,8 @@ class FindingOut(BaseModel):
     pathology: str
     probability: float
     contribution: float
-    population_rate: float = 0.0  # population baseline prevalence for reference
+    # population baseline prevalence; None when no reference exists (non-chest findings)
+    population_rate: Optional[float] = None
 
 
 class ReportOut(BaseModel):
@@ -55,6 +56,9 @@ class StudyOut(BaseModel):
     id: int
     patient: PatientOut
     modality: str
+    region: str = ""
+    analysis_source: str = "model"  # "model" | "vision"
+    heatmap_available: bool = False  # Grad-CAM localization only exists for chest X-ray
     uploaded_at: str
     risk_score: int
     risk_base: int = 0

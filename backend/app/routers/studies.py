@@ -24,7 +24,7 @@ from ..schemas import (
     StudyOut,
 )
 from ..services import notify
-from ..services.inference import DEFAULT_RATE, POPULATION_RATES
+from ..services.inference import POPULATION_RATES
 from ..services.pipeline import UPLOADS_DIR, process
 
 log = logging.getLogger("radguard.studies")
@@ -56,6 +56,11 @@ def to_study_out(study: Study, session) -> StudyOut:
             sex=patient.sex if patient else "U",
         ),
         modality=study.modality,
+        region=study.region,
+        analysis_source=study.analysis_source or "model",
+        heatmap_available=bool(
+            study.heatmap_path and study.heatmap_path != study.original_path
+        ),
         uploaded_at=study.uploaded_at.isoformat(),
         risk_score=study.risk_score,
         risk_base=study.risk_base or study.risk_score,
@@ -66,7 +71,8 @@ def to_study_out(study: Study, session) -> StudyOut:
                 pathology=f.pathology,
                 probability=round(f.probability, 3),
                 contribution=round(f.contribution, 3),
-                population_rate=POPULATION_RATES.get(f.pathology, DEFAULT_RATE),
+                # only real for chest pathologies; None (no reference) otherwise
+                population_rate=POPULATION_RATES.get(f.pathology),
             )
             for f in sorted(findings, key=lambda f: f.probability, reverse=True)
         ],
@@ -117,6 +123,8 @@ def persist_study(results: dict, patient: dict, session) -> Study:
     study = Study(
         patient_id=patient["id"],
         modality=results.get("modality", "DX"),
+        region=results.get("region", "") or "",
+        analysis_source=results.get("analysis_source", "model"),
         original_path=results["original_png"],
         heatmap_path=results["heatmap_png"],
         pacs_study_uid=results["pacs"]["study_instance_uid"],

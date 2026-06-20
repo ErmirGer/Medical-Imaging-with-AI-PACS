@@ -8,6 +8,9 @@ class Settings(BaseSettings):
 
     ANTHROPIC_API_KEY: str = ""
     REPORT_MODEL: str = "claude-haiku-4-5-20251001"
+    # Vision model for analyzing ANY medical image (modality/region/findings).
+    # Empty -> falls back to REPORT_MODEL. Set to e.g. claude-opus-4-8 for higher quality.
+    VISION_MODEL: str = ""
 
     ORTHANC_URL: str = "http://localhost:8042"
     ORTHANC_USER: str = ""

@@ -48,6 +48,7 @@ export default function StudyDetail() {
           <p className="text-sm text-slate-400">
             {study.patient.id} · {study.patient.age}/{study.patient.sex} ·{" "}
             {study.modality}
+            {study.region ? ` · ${study.region}` : ""}
           </p>
         </div>
         <RiskBadge score={study.risk_score} band={study.risk_band} size="lg" />
