@@ -1,0 +1,35 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "RadGuard" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img [ref=e8]
+        - generic [ref=e10]: RadGuard
+      - navigation [ref=e11]:
+        - link "Worklist" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e13]
+          - text: Worklist
+        - link "Upload" [ref=e16] [cursor=pointer]:
+          - /url: /upload
+          - img [ref=e17]
+          - text: Upload
+        - link "Dept Board" [ref=e20] [cursor=pointer]:
+          - /url: /board
+          - img [ref=e21]
+          - text: Dept Board
+      - generic [ref=e26]:
+        - generic "Live alert stream" [ref=e27]:
+          - img [ref=e28]
+          - text: Live
+        - combobox [ref=e34]:
+          - option "Radiology"
+          - option "Emergency" [selected]
+          - option "Cardiology"
+          - option "Surgery"
+  - main [ref=e35]:
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - heading "Emergency Board" [level=1] [ref=e82]
+        - paragraph [ref=e39]: Cross-departmental queue · live high-risk routing
+      - paragraph [ref=e83]: Loading…

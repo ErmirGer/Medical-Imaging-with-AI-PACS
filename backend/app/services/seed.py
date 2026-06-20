@@ -7,8 +7,9 @@ from pathlib import Path
 
 from sqlmodel import select
 
+from ..config import settings
 from ..db import get_session
-from ..models import Patient, Study, User
+from ..models import Alert, Patient, Study, User
 from .pipeline import process
 
 log = logging.getLogger("radguard.seed")
@@ -99,7 +100,18 @@ def run_seed() -> dict:
             study_uid = entry.get("study_uid")
             try:
                 results = process(str(img_path), patient_d, study_uid)
-                persist_study(results, patient_d, session)
+                study = persist_study(results, patient_d, session)
+                # pre-create an alert for high-risk seeded studies so the
+                # Emergency board shows "the alert is already there".
+                if study.risk_band == "High" or study.risk_score >= settings.HIGH_RISK_THRESHOLD:
+                    session.add(
+                        Alert(
+                            study_id=study.id,
+                            department="Emergency",
+                            channel="seed",
+                        )
+                    )
+                    session.commit()
                 created += 1
             except Exception as exc:
                 log.warning("seed study failed for %s: %s", img_path, exc)
