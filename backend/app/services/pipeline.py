@@ -15,6 +15,10 @@ from .dicom import png_to_dicom_bytes, push_to_orthanc
 
 log = logging.getLogger("radguard.pipeline")
 
+
+class ImageRejected(Exception):
+    """Raised when an upload cannot be analyzed (not medical / too low quality)."""
+
 STORAGE = Path(__file__).resolve().parents[2] / "storage"
 IMAGES_DIR = STORAGE / "images"
 UPLOADS_DIR = STORAGE / "uploads"
@@ -35,9 +39,38 @@ def process(
     """
     token = uuid.uuid4().hex[:12]
 
+    # 0. Cheap resolution gate (no API cost) — reject obviously unusable uploads.
+    try:
+        from PIL import Image
+
+        with Image.open(src_path) as im:
+            w, h = im.size
+        if min(w, h) < 64:
+            raise ImageRejected(
+                "The image resolution is too low to analyze. "
+                "Please upload a higher-resolution image."
+            )
+    except ImageRejected:
+        raise
+    except Exception as exc:
+        log.warning("could not read image dimensions: %s", exc)
+
     # 1. Vision triage: figure out what this image actually IS (modality, body
     #    region, whether it's a chest X-ray) before assuming the chest model applies.
     vis = vision.analyze(src_path, patient, clinical)
+
+    # 1b. Quality / medical gate — refuse to fabricate an analysis on bad input.
+    if vis is not None:
+        if not vis.get("is_medical", True):
+            raise ImageRejected(
+                "This does not appear to be a medical image, so it was not analyzed."
+            )
+        if vis.get("quality") == "poor":
+            why = vis.get("quality_issue") or "the image is too low quality to read reliably"
+            raise ImageRejected(
+                f"The image cannot be analyzed: {why}. Please upload a clearer image."
+            )
+
     is_chest = vis["is_chest_xray"] if vis else True  # no key/failed -> assume CXR
     region = vis["body_region"] if vis else ""
     if vis:
@@ -68,9 +101,10 @@ def process(
         #     the analyzer. No chest model, no Grad-CAM (would be meaningless).
         analysis_source = "vision"
         try:
-            inference.save_original_png(src_path, original_png)
+            # faithful full-frame copy (NOT the chest center-crop) so it isn't zoomed
+            inference.save_display_png(src_path, original_png)
         except Exception as exc:
-            log.warning("original png failed: %s", exc)
+            log.warning("display png failed: %s", exc)
             original_png = src_path
         heatmap_png = original_png  # no localization model for this modality/region
         risk = {

@@ -16,7 +16,16 @@ export const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ?? "http://localhost:8000";
 
 async function json<T>(res: Response): Promise<T> {
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try {
+      const body = await res.json();
+      if (body?.detail) detail = typeof body.detail === "string" ? body.detail : detail;
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new Error(detail);
+  }
   return res.json() as Promise<T>;
 }
 

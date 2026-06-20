@@ -25,7 +25,7 @@ from ..schemas import (
 )
 from ..services import notify
 from ..services.inference import POPULATION_RATES
-from ..services.pipeline import UPLOADS_DIR, process
+from ..services.pipeline import UPLOADS_DIR, ImageRejected, process
 
 log = logging.getLogger("radguard.studies")
 router = APIRouter(prefix="/api", tags=["studies"])
@@ -175,6 +175,15 @@ async def create_study(
     spo2: int | None = Form(None),
     smoker: bool = Form(False),
 ):
+    # 0. require patient identity before any analysis runs
+    name = (patient_name or "").strip()
+    if not name:
+        raise HTTPException(422, "Patient name is required.")
+    if age is None or age <= 0:
+        raise HTTPException(422, "Patient age is required.")
+    if (sex or "").upper() not in {"M", "F", "O"}:
+        raise HTTPException(422, "Patient sex is required.")
+
     # 1. save upload
     suffix = Path(file.filename or "upload.png").suffix or ".png"
     dst = UPLOADS_DIR / f"{uuid.uuid4().hex[:12]}{suffix}"
@@ -188,31 +197,27 @@ async def create_study(
         "smoker": bool(smoker),
     }
 
+    pid = patient_id or f"P-{uuid.uuid4().hex[:6].upper()}"
+    patient_d = {"id": pid, "name": name, "age": age, "sex": sex.upper()}
+
+    # 2-6 pipeline runs FIRST (vision triage + quality gate) — nothing is written
+    # to the DB if the image is rejected, so no orphan patient/study is left behind.
+    try:
+        results = process(str(dst), patient_d, clinical=clinical, modality=modality)
+    except ImageRejected as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
     with get_session() as session:
-        # resolve / create patient (form values override demo defaults)
+        # resolve / create patient only after a successful analysis
         patient = None
         if patient_id:
             patient = session.get(Patient, patient_id)
         if patient is None:
-            pid = patient_id or f"P-{uuid.uuid4().hex[:6].upper()}"
-            patient = Patient(
-                id=pid,
-                name=(patient_name or "Walk-in Patient"),
-                age=age if age is not None else 50,
-                sex=(sex or "U"),
-            )
+            patient = Patient(id=pid, name=name, age=age, sex=sex.upper())
             session.add(patient)
             session.commit()
             session.refresh(patient)
-        patient_d = {
-            "id": patient.id,
-            "name": patient.name,
-            "age": patient.age,
-            "sex": patient.sex,
-        }
-
-        # 2-6 pipeline (imaging + clinical fusion)
-        results = process(str(dst), patient_d, clinical=clinical, modality=modality)
+        patient_d["id"] = patient.id
 
         # 7. persist
         study = persist_study(results, patient_d, session)

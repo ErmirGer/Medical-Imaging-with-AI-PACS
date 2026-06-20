@@ -94,7 +94,12 @@ def analyze(path: str, patient: dict | None = None, clinical: dict | None = None
             '"risk_band": "Low" | "Medium" | "High", '
             '"driver": string (the single most important finding), '
             '"impression_en": string, "impression_sq": string, '
-            '"recommendation_en": string, "recommendation_sq": string}.\n'
+            '"recommendation_en": string, "recommendation_sq": string, '
+            '"quality": "good" | "poor", "quality_issue": string}.\n'
+            "Set quality to 'poor' if the image is too blurry, too dark or washed "
+            "out, heavily cropped, low-resolution, or otherwise not diagnostic, and "
+            "put a short reason in quality_issue; otherwise 'good' with an empty "
+            "quality_issue. "
             "impression_sq and recommendation_sq MUST be written in Albanian. "
             "List up to 6 findings, most significant first; if the image is normal, "
             "return a single finding named 'No acute abnormality'. Keep each "
@@ -164,9 +169,12 @@ def _normalize(d: dict) -> dict:
         band = "High" if score >= 70 else "Medium" if score >= 40 else "Low"
 
     driver = str(d.get("driver") or (findings[0]["name"] if findings else "Finding"))
+    quality = "poor" if str(d.get("quality", "good")).lower() == "poor" else "good"
 
     return {
         "is_medical": bool(d.get("is_medical", True)),
+        "quality": quality,
+        "quality_issue": str(d.get("quality_issue", "") or "").strip(),
         "modality": modality,
         "body_region": str(d.get("body_region", "") or "").strip(),
         "is_chest_xray": bool(d.get("is_chest_xray", False)),

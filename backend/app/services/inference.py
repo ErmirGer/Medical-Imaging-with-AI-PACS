@@ -66,13 +66,28 @@ def heatmap(path: str, top_pathology: str, out_png: str) -> None:
 
 
 def save_original_png(path: str, out_png: str) -> None:
-    """Plain grayscale 512x512 PNG of the (preprocessed) original for the toggle view."""
+    """Plain grayscale 512x512 PNG of the (preprocessed) original for the toggle view.
+
+    Center-cropped + resized so it aligns with the Grad-CAM heatmap overlay. Use
+    only for the chest path where a heatmap is produced.
+    """
     x = _preprocess(path)
     base = x[0, 0].numpy()
     base = (base - base.min()) / (np.ptp(base) + 1e-8)
     Image.fromarray((base * 255).astype(np.uint8)).resize((512, 512)).convert("L").save(
         out_png
     )
+
+
+def save_display_png(path: str, out_png: str, max_size: int = 768) -> None:
+    """Faithful, aspect-ratio-preserving copy of the upload for display.
+
+    No center-crop or square resize — used for non-chest images (vision path)
+    where there is no heatmap to align with, so the full image must be shown.
+    """
+    img = Image.open(path).convert("RGB")
+    img.thumbnail((max_size, max_size))
+    img.save(out_png, format="PNG")
 
 
 # --- Risk score -----------------------------------------------------------
