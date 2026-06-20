@@ -24,7 +24,7 @@ from ..schemas import (
     StudyOut,
 )
 from ..services import notify
-from ..services.inference import POPULATION_RATES
+from ..services.inference import PATHOLOGY_SQ, POPULATION_RATES, severity_from_prob
 from ..services.pipeline import UPLOADS_DIR, ImageRejected, process
 
 log = logging.getLogger("radguard.studies")
@@ -66,11 +66,14 @@ def to_study_out(study: Study, session) -> StudyOut:
         risk_base=study.risk_base or study.risk_score,
         risk_band=study.risk_band,
         top_finding=study.top_finding,
+        top_finding_sq=study.top_finding_sq or study.top_finding,
         findings=[
             FindingOut(
                 pathology=f.pathology,
+                pathology_sq=f.pathology_sq or f.pathology,
                 probability=round(f.probability, 3),
                 contribution=round(f.contribution, 3),
+                severity=f.severity or "mild",
                 # only real for chest pathologies; None (no reference) otherwise
                 population_rate=POPULATION_RATES.get(f.pathology),
             )
@@ -140,6 +143,7 @@ def persist_study(results: dict, patient: dict, session) -> Study:
         risk_base=risk.get("base_score", risk["score"]),
         risk_band=risk["band"],
         top_finding=risk["driver"],
+        top_finding_sq=results.get("top_finding_sq", "") or risk["driver"],
         report_en=rep["impression_en"],
         report_sq=rep["impression_sq"],
         recommendation_en=rep["recommendation_en"],
@@ -153,8 +157,11 @@ def persist_study(results: dict, patient: dict, session) -> Study:
             Finding(
                 study_id=study.id,
                 pathology=f["pathology"],
+                pathology_sq=f.get("pathology_sq")
+                or PATHOLOGY_SQ.get(f["pathology"], f["pathology"]),
                 probability=f["probability"],
                 contribution=f["contribution"],
+                severity=f.get("severity") or severity_from_prob(f["probability"]),
             )
         )
     session.commit()

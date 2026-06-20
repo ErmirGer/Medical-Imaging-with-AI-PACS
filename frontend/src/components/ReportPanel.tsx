@@ -1,31 +1,20 @@
-import { useState } from "react";
-import type { Report } from "../types";
+import type { Lang, Report } from "../types";
 
-export default function ReportPanel({ report }: { report: Report }) {
-  const [lang, setLang] = useState<"en" | "sq">("en");
+export default function ReportPanel({
+  report,
+  lang,
+}: {
+  report: Report;
+  lang: Lang;
+}) {
   const imp = lang === "en" ? report.impression_en : report.impression_sq;
   const rec = lang === "en" ? report.recommendation_en : report.recommendation_sq;
 
   return (
     <div className="rounded-xl border border-edge bg-panel p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          AI Report
-        </h3>
-        <div className="flex overflow-hidden rounded-lg border border-edge text-xs">
-          {(["en", "sq"] as const).map((l) => (
-            <button
-              key={l}
-              onClick={() => setLang(l)}
-              className={`px-3 py-1 font-medium ${
-                lang === l ? "bg-accent/20 text-accent" : "text-slate-400"
-              }`}
-            >
-              {l === "en" ? "EN" : "SQ"}
-            </button>
-          ))}
-        </div>
-      </div>
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+        AI Report
+      </h3>
 
       <div className="space-y-3 text-sm leading-relaxed">
         <div>
@@ -43,7 +32,9 @@ export default function ReportPanel({ report }: { report: Report }) {
       </div>
 
       <p className="mt-4 border-t border-edge pt-3 text-xs text-slate-500">
-        AI decision support — not a definitive diagnosis. For clinician review.
+        {lang === "en"
+          ? "AI decision support — not a definitive diagnosis. For clinician review."
+          : "Mbështetje vendimi me AI — jo diagnozë përfundimtare. Për rishikim nga mjeku."}
       </p>
     </div>
   );

@@ -1,8 +1,14 @@
+export type Lang = "en" | "sq";
+
+export type Severity = "none" | "mild" | "moderate" | "severe";
+
 export interface Finding {
   pathology: string;
+  pathology_sq?: string;
   probability: number;
   contribution: number;
-  population_rate?: number;
+  severity?: Severity;
+  population_rate?: number | null;
 }
 
 export interface Clinical {
@@ -53,6 +59,7 @@ export interface Study {
   risk_base?: number;
   risk_band: "High" | "Medium" | "Low";
   top_finding: string;
+  top_finding_sq?: string;
   findings: Finding[];
   report: Report;
   pacs: Pacs;

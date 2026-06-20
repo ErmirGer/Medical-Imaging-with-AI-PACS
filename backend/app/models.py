@@ -50,6 +50,7 @@ class Study(SQLModel, table=True):
     risk_base: int = 0  # imaging-only score before clinical fusion
     risk_band: str = "Low"
     top_finding: str = ""
+    top_finding_sq: str = ""  # Albanian name of the risk driver
 
     report_en: str = ""
     report_sq: str = ""
@@ -61,8 +62,10 @@ class Finding(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     study_id: int = Field(foreign_key="study.id")
     pathology: str
+    pathology_sq: str = ""  # Albanian name (for the bilingual findings view)
     probability: float = 0.0
     contribution: float = 0.0
+    severity: str = "mild"  # none|mild|moderate|severe — drives UI color
 
 
 class Alert(SQLModel, table=True):

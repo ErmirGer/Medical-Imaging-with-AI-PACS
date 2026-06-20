@@ -135,6 +135,43 @@ POPULATION_RATES = {
 }
 DEFAULT_RATE = 0.05
 
+# Albanian names for the chest pathologies (for the bilingual findings view).
+PATHOLOGY_SQ = {
+    "Atelectasis": "Atelektazë",
+    "Consolidation": "Konsolidim",
+    "Infiltration": "Infiltrim",
+    "Pneumothorax": "Pneumotoraks",
+    "Edema": "Edemë",
+    "Emphysema": "Emfizemë",
+    "Fibrosis": "Fibrozë",
+    "Effusion": "Efuzion pleural",
+    "Pneumonia": "Pneumoni",
+    "Pleural_Thickening": "Trashje pleurale",
+    "Cardiomegaly": "Kardiomegali",
+    "Nodule": "Nodul",
+    "Mass": "Masë",
+    "Hernia": "Hernie",
+    "Lung Opacity": "Errësim pulmonar",
+    "Enlarged Cardiomediastinum": "Mediastin i zgjeruar",
+    "Lung Lesion": "Lezion pulmonar",
+    "Fracture": "Frakturë",
+}
+
+
+def severity_from_prob(p: float) -> str:
+    """Map a chest pathology probability to a severity band for UI coloring.
+
+    Chest model outputs are all potential abnormalities, so a low-probability
+    finding is still 'mild' (never the reassuring 'none' used for normal vision
+    observations).
+    """
+    if p >= 0.70:
+        return "severe"
+    if p >= 0.40:
+        return "moderate"
+    return "mild"
+
+
 CLINICAL_CAP = 25  # max risk points clinical context can add (image stays primary)
 
 

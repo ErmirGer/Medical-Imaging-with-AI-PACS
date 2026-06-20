@@ -83,24 +83,37 @@ def analyze(path: str, patient: dict | None = None, clinical: dict | None = None
             + "Analyze this medical image. Determine the imaging modality and the "
             "body region, detect any abnormalities you can actually see, and assign "
             "an overall clinical risk score from 0-100 (higher = more urgent).\n"
+            "IGNORE everything that is not anatomy: any burned-in text, letters, "
+            "numbers, dates/timestamps, patient/institution labels, watermarks, "
+            "measurement overlays, side markers, and device or equipment labels. "
+            "Also ignore whether the image is a photograph of a screen or film. "
+            "NEVER mention dates, years, the photo/screen, or image artifacts in "
+            "your findings, driver, or impression — describe only the anatomy and "
+            "any pathology.\n"
             "Return JSON with EXACTLY these keys:\n"
             '{"is_medical": boolean, '
             '"modality": "X-ray" | "CT" | "MRI" | "Ultrasound" | "Other", '
             '"body_region": string (e.g. "Hand", "Chest", "Knee", "Abdomen"), '
             '"is_chest_xray": boolean, '
-            '"findings": [{"name": string, "probability": number 0-1, '
+            '"findings": [{"name": string, "name_sq": string, '
+            '"probability": number 0-1, '
             '"severity": "none" | "mild" | "moderate" | "severe"}], '
             '"risk_score": integer 0-100, '
             '"risk_band": "Low" | "Medium" | "High", '
             '"driver": string (the single most important finding), '
+            '"driver_sq": string, '
             '"impression_en": string, "impression_sq": string, '
             '"recommendation_en": string, "recommendation_sq": string, '
             '"quality": "good" | "poor", "quality_issue": string}.\n'
+            "Set severity to how clinically concerning each finding is: 'none' for "
+            "normal/reassuring observations (e.g. 'no fracture', 'normal "
+            "alignment'), up to 'severe' for urgent pathology. "
             "Set quality to 'poor' if the image is too blurry, too dark or washed "
             "out, heavily cropped, low-resolution, or otherwise not diagnostic, and "
             "put a short reason in quality_issue; otherwise 'good' with an empty "
             "quality_issue. "
-            "impression_sq and recommendation_sq MUST be written in Albanian. "
+            "name_sq, driver_sq, impression_sq and recommendation_sq MUST be in "
+            "Albanian; name/driver/impression_en/recommendation_en in English. "
             "List up to 6 findings, most significant first; if the image is normal, "
             "return a single finding named 'No acute abnormality'. Keep each "
             "impression and recommendation 1-3 sentences, clinical tone. "
@@ -156,7 +169,15 @@ def _normalize(d: dict) -> dict:
         p = max(0.0, min(1.0, p))
         sev = f.get("severity") if f.get("severity") in _ALLOWED_SEVERITY else "mild"
         name = str(f.get("name", "Finding")).strip() or "Finding"
-        findings.append({"name": name, "probability": round(p, 3), "severity": sev})
+        name_sq = str(f.get("name_sq", "") or "").strip() or name
+        findings.append(
+            {
+                "name": name,
+                "name_sq": name_sq,
+                "probability": round(p, 3),
+                "severity": sev,
+            }
+        )
 
     try:
         score = int(round(float(d.get("risk_score", 0) or 0)))
@@ -169,6 +190,9 @@ def _normalize(d: dict) -> dict:
         band = "High" if score >= 70 else "Medium" if score >= 40 else "Low"
 
     driver = str(d.get("driver") or (findings[0]["name"] if findings else "Finding"))
+    driver_sq = str(d.get("driver_sq", "") or "").strip() or (
+        findings[0]["name_sq"] if findings else driver
+    )
     quality = "poor" if str(d.get("quality", "good")).lower() == "poor" else "good"
 
     return {
@@ -182,6 +206,7 @@ def _normalize(d: dict) -> dict:
         "risk_score": score,
         "risk_band": band,
         "driver": driver,
+        "driver_sq": driver_sq,
         "impression_en": str(d.get("impression_en", "") or ""),
         "impression_sq": str(d.get("impression_sq", "") or ""),
         "recommendation_en": str(d.get("recommendation_en", "") or ""),

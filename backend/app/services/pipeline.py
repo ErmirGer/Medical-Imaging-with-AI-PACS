@@ -96,6 +96,7 @@ def process(
             log.warning("heatmap failed: %s", exc)
             heatmap_png = original_png
         rep = report.generate(patient, risk, risk["top_findings"], clinical)
+        top_finding_sq = inference.PATHOLOGY_SQ.get(driver, driver)
     else:
         # --- Anything else (hand X-ray, CT, MRI, ultrasound...): Claude vision is
         #     the analyzer. No chest model, no Grad-CAM (would be meaningless).
@@ -118,8 +119,10 @@ def process(
             "top_findings": [
                 {
                     "pathology": f["name"],
+                    "pathology_sq": f.get("name_sq", f["name"]),
                     "probability": f["probability"],
                     "contribution": f["probability"],
+                    "severity": f.get("severity", "mild"),
                 }
                 for f in vis["findings"][:5]
             ],
@@ -131,6 +134,7 @@ def process(
             "recommendation_en": vis["recommendation_en"],
             "recommendation_sq": vis["recommendation_sq"],
         }
+        top_finding_sq = vis.get("driver_sq", vis["driver"])
 
     # 5. PNG -> DICOM + push to Orthanc
     pacs = {"study_instance_uid": "", "orthanc_id": "", "archived": False}
@@ -166,4 +170,5 @@ def process(
         "modality": modality,
         "region": region,
         "analysis_source": analysis_source,
+        "top_finding_sq": top_finding_sq,
     }

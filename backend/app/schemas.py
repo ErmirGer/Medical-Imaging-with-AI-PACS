@@ -12,8 +12,10 @@ class PatientOut(BaseModel):
 
 class FindingOut(BaseModel):
     pathology: str
+    pathology_sq: str = ""
     probability: float
     contribution: float
+    severity: str = "mild"  # none|mild|moderate|severe — drives UI color
     # population baseline prevalence; None when no reference exists (non-chest findings)
     population_rate: Optional[float] = None
 
@@ -64,6 +66,7 @@ class StudyOut(BaseModel):
     risk_base: int = 0
     risk_band: str
     top_finding: str
+    top_finding_sq: str = ""
     findings: list[FindingOut]
     report: ReportOut
     pacs: PacsOut

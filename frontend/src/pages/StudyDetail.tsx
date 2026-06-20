@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -17,10 +18,12 @@ import RiskBadge from "../components/RiskBadge";
 import FindingsList from "../components/FindingsList";
 import ReportPanel from "../components/ReportPanel";
 import PopulationChart from "../components/PopulationChart";
+import type { Lang } from "../types";
 
 export default function StudyDetail() {
   const { id } = useParams();
   const studyId = Number(id);
+  const [lang, setLang] = useState<Lang>("en");
   const { data: study, isLoading } = useQuery({
     queryKey: ["study", studyId],
     queryFn: () => api.getStudy(studyId),
@@ -51,7 +54,22 @@ export default function StudyDetail() {
             {study.region ? ` · ${study.region}` : ""}
           </p>
         </div>
-        <RiskBadge score={study.risk_score} band={study.risk_band} size="lg" />
+        <div className="flex items-center gap-3">
+          <div className="flex overflow-hidden rounded-lg border border-edge text-xs">
+            {(["en", "sq"] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                className={`px-3 py-1.5 font-medium ${
+                  lang === l ? "bg-accent/20 text-accent" : "text-slate-400"
+                }`}
+              >
+                {l === "en" ? "EN" : "SQ"}
+              </button>
+            ))}
+          </div>
+          <RiskBadge score={study.risk_score} band={study.risk_band} size="lg" />
+        </div>
       </div>
 
       {(() => {
@@ -120,15 +138,19 @@ export default function StudyDetail() {
 
         <div className="space-y-6">
           <div className="rounded-xl border border-edge bg-panel p-4">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-                Findings
+                {lang === "sq" ? "Gjetjet" : "Findings"}
               </h3>
-              <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                <ShieldCheck size={13} /> driver: {study.top_finding}
+              <span className="inline-flex items-center gap-1 text-right text-xs text-slate-500">
+                <ShieldCheck size={13} className="shrink-0" />
+                {lang === "sq" ? "drejtues: " : "driver: "}
+                {lang === "sq"
+                  ? study.top_finding_sq || study.top_finding
+                  : study.top_finding}
               </span>
             </div>
-            <FindingsList findings={study.findings} />
+            <FindingsList findings={study.findings} lang={lang} />
           </div>
 
           <PopulationChart findings={study.findings} />
@@ -187,7 +209,7 @@ export default function StudyDetail() {
             </div>
           )}
 
-          <ReportPanel report={study.report} />
+          <ReportPanel report={study.report} lang={lang} />
 
           {comparison?.has_prior && (
             <div className="rounded-xl border border-edge bg-panel p-4">
@@ -198,10 +220,10 @@ export default function StudyDetail() {
                   <TrendingDown size={16} className="text-low" />
                 )}
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-                  Prior comparison
+                  {lang === "sq" ? "Krahasimi me studimin e mëparshëm" : "Prior comparison"}
                 </h3>
                 <span className="ml-auto text-xs text-slate-500">
-                  vs study #{comparison.prior_id}
+                  {lang === "sq" ? "vs studimi" : "vs study"} #{comparison.prior_id}
                 </span>
               </div>
               <div className="mb-3 flex items-center gap-3 text-sm">
@@ -230,8 +252,9 @@ export default function StudyDetail() {
                   {comparison.delta}
                 </span>
               </div>
-              <p className="text-sm text-slate-300">{comparison.summary_en}</p>
-              <p className="mt-1 text-xs text-slate-500">{comparison.summary_sq}</p>
+              <p className="text-sm text-slate-300">
+                {lang === "sq" ? comparison.summary_sq : comparison.summary_en}
+              </p>
             </div>
           )}
         </div>
