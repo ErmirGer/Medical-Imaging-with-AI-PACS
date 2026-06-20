@@ -1,0 +1,32 @@
+[
+  {
+    "file": "pneumonia_4.jpg",
+    "patient_id": "P-001",
+    "study_uid": "1.2.826.0.1.3680043.8.498.10001",
+    "note": "Ardit Krasniqi — PRIOR study (for mocked progression comparison)"
+  },
+  {
+    "file": "pneumonia_1.jpg",
+    "patient_id": "P-001",
+    "study_uid": "1.2.826.0.1.3680043.8.498.10002",
+    "note": "Ardit Krasniqi — CURRENT study, hero High case (Pneumonia 0.93)"
+  },
+  {
+    "file": "normal_1.png",
+    "patient_id": "P-002",
+    "study_uid": "1.2.826.0.1.3680043.8.498.10003",
+    "note": "Mirela Shala — Low / normal contrast case"
+  },
+  {
+    "file": "pneumonia_2.jpg",
+    "patient_id": "P-003",
+    "study_uid": "1.2.826.0.1.3680043.8.498.10004",
+    "note": "Sokol Berisha — second High case"
+  },
+  {
+    "file": "effusion_1.jpg",
+    "patient_id": "P-004",
+    "study_uid": "1.2.826.0.1.3680043.8.498.10005",
+    "note": "Drita Hysenaj — Medium case"
+  }
+]

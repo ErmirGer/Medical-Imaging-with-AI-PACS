@@ -1,0 +1,9 @@
+{
+  "Name": "RadGuard PACS",
+  "RemoteAccessAllowed": true,
+  "AuthenticationEnabled": false,
+  "DicomWeb": { "Enable": true, "Root": "/dicom-web/" },
+  "HttpCompressionEnabled": false,
+  "CorsEnabled": true,
+  "CorsOrigins": "*"
+}

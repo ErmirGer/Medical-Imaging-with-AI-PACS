@@ -1,0 +1,22 @@
+# secrets
+.env
+antropic.key
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+backend/storage/*.db
+backend/storage/*.db-*
+backend/storage/uploads/
+backend/.pytest_cache/
+
+# node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# os
+.DS_Store
+Thumbs.db
