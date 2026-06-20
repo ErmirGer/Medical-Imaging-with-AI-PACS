@@ -10,6 +10,7 @@ venv/
 backend/storage/*.db
 backend/storage/*.db-*
 backend/storage/uploads/
+backend/storage/images/
 backend/.pytest_cache/
 
 # node

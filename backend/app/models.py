@@ -36,6 +36,14 @@ class Study(SQLModel, table=True):
     pacs_orthanc_id: str = ""
     archived: bool = False
 
+    # Clinical context (fused with imaging findings in the risk score + report)
+    symptoms: str = ""
+    temperature: float = 0.0  # body temp °C (0 = not provided)
+    spo2: int = 0  # oxygen saturation % (0 = not provided)
+    smoker: bool = False
+    clinical_adjustment: int = 0  # risk points added by clinical fusion
+    clinical_factors: str = ""  # JSON list of human-readable clinical drivers
+
     risk_score: int = 0
     risk_band: str = "Low"
     top_finding: str = ""

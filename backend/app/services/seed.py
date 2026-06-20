@@ -98,8 +98,11 @@ def run_seed() -> dict:
                 "sex": patient.sex,
             }
             study_uid = entry.get("study_uid")
+            clinical = entry.get("clinical")
             try:
-                results = process(str(img_path), patient_d, study_uid)
+                results = process(
+                    str(img_path), patient_d, study_uid, clinical=clinical
+                )
                 study = persist_study(results, patient_d, session)
                 # pre-create an alert for high-risk seeded studies so the
                 # Emergency board shows "the alert is already there".

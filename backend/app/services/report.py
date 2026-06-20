@@ -16,6 +16,22 @@ SYSTEM = (
 )
 
 
+def _clinical_str(clinical: dict | None) -> str:
+    """One-line human-readable clinical summary, or '' if nothing provided."""
+    if not clinical:
+        return ""
+    bits = []
+    if clinical.get("symptoms"):
+        bits.append(f"symptoms: {clinical['symptoms']}")
+    if clinical.get("temperature"):
+        bits.append(f"temp {float(clinical['temperature']):.1f}°C")
+    if clinical.get("spo2"):
+        bits.append(f"SpO₂ {int(clinical['spo2'])}%")
+    if clinical.get("smoker"):
+        bits.append("active smoker")
+    return ", ".join(bits)
+
+
 def _fallback(patient: dict, risk: dict, findings: list[dict]) -> dict:
     top = findings[0]["pathology"] if findings else risk.get("driver", "finding")
     band = risk.get("band", "Low")
@@ -42,7 +58,9 @@ def _fallback(patient: dict, risk: dict, findings: list[dict]) -> dict:
     }
 
 
-def generate(patient: dict, risk: dict, findings: list[dict]) -> dict:
+def generate(
+    patient: dict, risk: dict, findings: list[dict], clinical: dict | None = None
+) -> dict:
     if not settings.ANTHROPIC_API_KEY:
         return _fallback(patient, risk, findings)
     try:
@@ -52,10 +70,21 @@ def generate(patient: dict, risk: dict, findings: list[dict]) -> dict:
         finding_str = ", ".join(
             f"{f['pathology']} {f['probability']:.2f}" for f in findings[:5]
         )
+        clinical_line = ""
+        clin = _clinical_str(clinical)
+        if clin:
+            clinical_line = f"Clinical context: {clin}.\n"
+        factors = risk.get("clinical_factors") or []
+        if factors:
+            clinical_line += "Clinical risk factors: " + "; ".join(factors) + ".\n"
         prompt = (
             f"Patient: {patient['name']}, age {patient['age']}.\n"
+            f"{clinical_line}"
             f"Risk score {risk['score']} ({risk['band']}), main driver {risk['driver']}.\n"
             f"Model findings (probability): {finding_str}.\n"
+            "Integrate the imaging findings with the clinical context above in your "
+            "impression (note any concordance, e.g. fever or hypoxia supporting an "
+            "infective process).\n"
             'Return JSON: {"impression_en","impression_sq","recommendation_en",'
             '"recommendation_sq"}. Keep each field 1-2 sentences, clinical tone.'
         )

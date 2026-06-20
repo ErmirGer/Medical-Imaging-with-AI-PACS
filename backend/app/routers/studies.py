@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import shutil
 import uuid
@@ -14,6 +15,7 @@ from ..db import get_session
 from ..models import Alert, Finding, Patient, Study
 from ..schemas import (
     AlertOut,
+    ClinicalOut,
     FindingOut,
     ImageUrls,
     PacsOut,
@@ -22,10 +24,21 @@ from ..schemas import (
     StudyOut,
 )
 from ..services import notify
+from ..services.inference import DEFAULT_RATE, POPULATION_RATES
 from ..services.pipeline import UPLOADS_DIR, process
 
 log = logging.getLogger("radguard.studies")
 router = APIRouter(prefix="/api", tags=["studies"])
+
+
+def _parse_factors(raw: str) -> list[str]:
+    if not raw:
+        return []
+    try:
+        val = json.loads(raw)
+        return val if isinstance(val, list) else []
+    except Exception:
+        return []
 
 
 def to_study_out(study: Study, session) -> StudyOut:
@@ -52,6 +65,7 @@ def to_study_out(study: Study, session) -> StudyOut:
                 pathology=f.pathology,
                 probability=round(f.probability, 3),
                 contribution=round(f.contribution, 3),
+                population_rate=POPULATION_RATES.get(f.pathology, DEFAULT_RATE),
             )
             for f in sorted(findings, key=lambda f: f.probability, reverse=True)
         ],
@@ -70,6 +84,20 @@ def to_study_out(study: Study, session) -> StudyOut:
             original=f"/api/studies/{study.id}/image?type=original",
             heatmap=f"/api/studies/{study.id}/image?type=heatmap",
         ),
+        clinical=ClinicalOut(
+            symptoms=study.symptoms,
+            temperature=study.temperature,
+            spo2=study.spo2,
+            smoker=study.smoker,
+            adjustment=study.clinical_adjustment,
+            factors=_parse_factors(study.clinical_factors),
+            provided=bool(
+                study.symptoms
+                or study.temperature
+                or study.spo2
+                or study.smoker
+            ),
+        ),
         alert=AlertOut(
             sent=alert is not None,
             department=alert.department if alert else "",
@@ -84,14 +112,21 @@ def persist_study(results: dict, patient: dict, session) -> Study:
     """Persist pipeline results to a Study + Findings rows. Caller commits."""
     risk = results["risk"]
     rep = results["report"]
+    clinical = results.get("clinical") or {}
     study = Study(
         patient_id=patient["id"],
-        modality="DX",
+        modality=results.get("modality", "DX"),
         original_path=results["original_png"],
         heatmap_path=results["heatmap_png"],
         pacs_study_uid=results["pacs"]["study_instance_uid"],
         pacs_orthanc_id=results["pacs"]["orthanc_id"],
         archived=results["pacs"]["archived"],
+        symptoms=clinical.get("symptoms", "") or "",
+        temperature=float(clinical.get("temperature") or 0),
+        spo2=int(clinical.get("spo2") or 0),
+        smoker=bool(clinical.get("smoker")),
+        clinical_adjustment=risk.get("clinical_adjustment", 0),
+        clinical_factors=json.dumps(risk.get("clinical_factors", [])),
         risk_score=risk["score"],
         risk_band=risk["band"],
         top_finding=risk["driver"],
@@ -121,6 +156,14 @@ def persist_study(results: dict, patient: dict, session) -> Study:
 async def create_study(
     file: UploadFile = File(...),
     patient_id: str | None = Form(None),
+    patient_name: str | None = Form(None),
+    age: int | None = Form(None),
+    sex: str | None = Form(None),
+    modality: str = Form("DX"),
+    symptoms: str | None = Form(None),
+    temperature: float | None = Form(None),
+    spo2: int | None = Form(None),
+    smoker: bool = Form(False),
 ):
     # 1. save upload
     suffix = Path(file.filename or "upload.png").suffix or ".png"
@@ -128,14 +171,26 @@ async def create_study(
     with open(dst, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
+    clinical = {
+        "symptoms": (symptoms or "").strip(),
+        "temperature": temperature or 0,
+        "spo2": spo2 or 0,
+        "smoker": bool(smoker),
+    }
+
     with get_session() as session:
-        # resolve / create patient
+        # resolve / create patient (form values override demo defaults)
         patient = None
         if patient_id:
             patient = session.get(Patient, patient_id)
         if patient is None:
             pid = patient_id or f"P-{uuid.uuid4().hex[:6].upper()}"
-            patient = Patient(id=pid, name="Walk-in Patient", age=50, sex="U")
+            patient = Patient(
+                id=pid,
+                name=(patient_name or "Walk-in Patient"),
+                age=age if age is not None else 50,
+                sex=(sex or "U"),
+            )
             session.add(patient)
             session.commit()
             session.refresh(patient)
@@ -146,8 +201,8 @@ async def create_study(
             "sex": patient.sex,
         }
 
-        # 2-6 pipeline
-        results = process(str(dst), patient_d)
+        # 2-6 pipeline (imaging + clinical fusion)
+        results = process(str(dst), patient_d, clinical=clinical, modality=modality)
 
         # 7. persist
         study = persist_study(results, patient_d, session)

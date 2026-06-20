@@ -9,7 +9,13 @@
     "file": "pneumonia_1.jpg",
     "patient_id": "P-001",
     "study_uid": "1.2.826.0.1.3680043.8.498.10002",
-    "note": "Ardit Krasniqi — CURRENT study, hero High case (Pneumonia 0.93)"
+    "note": "Ardit Krasniqi — CURRENT study, hero High case (Pneumonia 0.93)",
+    "clinical": {
+      "symptoms": "productive cough, dyspnea, pleuritic chest pain (3 days)",
+      "temperature": 39.1,
+      "spo2": 89,
+      "smoker": true
+    }
   },
   {
     "file": "normal_1.png",
@@ -27,6 +33,12 @@
     "file": "effusion_1.jpg",
     "patient_id": "P-004",
     "study_uid": "1.2.826.0.1.3680043.8.498.10005",
-    "note": "Drita Hysenaj — Medium case"
+    "note": "Drita Hysenaj — Medium case",
+    "clinical": {
+      "symptoms": "shortness of breath on exertion",
+      "temperature": 37.2,
+      "spo2": 94,
+      "smoker": false
+    }
   }
 ]

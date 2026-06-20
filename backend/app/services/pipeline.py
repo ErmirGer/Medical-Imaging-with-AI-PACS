@@ -26,16 +26,19 @@ def process(
     src_path: str,
     patient: dict,
     study_uid: str | None = None,
+    clinical: dict | None = None,
+    modality: str = "DX",
 ) -> dict:
     """Run the full pipeline on a saved upload. Returns a dict of results
     to persist on a Study row. `patient` = {id,name,age,sex}.
+    `clinical` = optional {symptoms,temperature,spo2,smoker} fused into risk+report.
     """
     token = uuid.uuid4().hex[:12]
 
     # 2. predict
     probs = inference.predict(src_path)
-    # 3. risk
-    risk = inference.risk_score(probs)
+    # 3. risk (fused with clinical context when provided)
+    risk = inference.risk_score(probs, clinical)
     driver = risk["driver"]
 
     # original + heatmap PNGs
@@ -75,8 +78,8 @@ def process(
         except Exception:
             pass
 
-    # 6. bilingual report
-    rep = report.generate(patient, risk, risk["top_findings"])
+    # 6. bilingual report (imaging + clinical fusion)
+    rep = report.generate(patient, risk, risk["top_findings"], clinical)
 
     return {
         "probs": probs,
@@ -85,4 +88,6 @@ def process(
         "heatmap_png": heatmap_png,
         "pacs": pacs,
         "report": rep,
+        "clinical": clinical or {},
+        "modality": modality,
     }

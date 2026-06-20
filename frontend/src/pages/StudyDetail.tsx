@@ -1,11 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Database, ShieldCheck, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  ArrowLeft,
+  Database,
+  ShieldCheck,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Thermometer,
+  Wind,
+  Cigarette,
+} from "lucide-react";
 import { api } from "../api";
 import Viewer from "../components/Viewer";
 import RiskBadge from "../components/RiskBadge";
 import FindingsList from "../components/FindingsList";
 import ReportPanel from "../components/ReportPanel";
+import PopulationChart from "../components/PopulationChart";
 
 export default function StudyDetail() {
   const { id } = useParams();
@@ -75,6 +86,62 @@ export default function StudyDetail() {
             </div>
             <FindingsList findings={study.findings} />
           </div>
+
+          <PopulationChart findings={study.findings} />
+
+          {study.clinical?.provided && (
+            <div className="rounded-xl border border-edge bg-panel p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+                  <Activity size={14} className="text-accent" /> Clinical fusion
+                </h3>
+                {study.clinical.adjustment > 0 && (
+                  <span className="rounded bg-high/15 px-2 py-0.5 text-xs font-semibold text-high">
+                    +{study.clinical.adjustment} risk
+                  </span>
+                )}
+              </div>
+
+              <div className="mb-3 flex flex-wrap gap-2 text-xs">
+                {study.clinical.temperature > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-edge bg-panel/60 px-2.5 py-1 text-slate-300">
+                    <Thermometer size={12} /> {study.clinical.temperature.toFixed(1)}°C
+                  </span>
+                )}
+                {study.clinical.spo2 > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-edge bg-panel/60 px-2.5 py-1 text-slate-300">
+                    <Wind size={12} /> SpO₂ {study.clinical.spo2}%
+                  </span>
+                )}
+                {study.clinical.smoker && (
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-edge bg-panel/60 px-2.5 py-1 text-slate-300">
+                    <Cigarette size={12} /> Smoker
+                  </span>
+                )}
+              </div>
+
+              {study.clinical.symptoms && (
+                <p className="mb-3 text-sm text-slate-300">
+                  <span className="text-slate-500">Symptoms: </span>
+                  {study.clinical.symptoms}
+                </p>
+              )}
+
+              {study.clinical.factors.length > 0 && (
+                <ul className="space-y-1">
+                  {study.clinical.factors.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-start gap-2 text-sm text-slate-300"
+                    >
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-high" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           <ReportPanel report={study.report} />
 

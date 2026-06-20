@@ -2,6 +2,17 @@ export interface Finding {
   pathology: string;
   probability: number;
   contribution: number;
+  population_rate?: number;
+}
+
+export interface Clinical {
+  symptoms: string;
+  temperature: number;
+  spo2: number;
+  smoker: boolean;
+  adjustment: number;
+  factors: string[];
+  provided: boolean;
 }
 
 export interface Report {
@@ -42,6 +53,7 @@ export interface Study {
   report: Report;
   pacs: Pacs;
   image_urls: { original: string; heatmap: string };
+  clinical?: Clinical | null;
   alert: AlertInfo | null;
 }
 

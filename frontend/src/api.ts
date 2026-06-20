@@ -1,5 +1,17 @@
 import type { Study, Comparison } from "./types";
 
+export interface UploadMeta {
+  patientId?: string;
+  patientName?: string;
+  age?: number;
+  sex?: string;
+  modality?: string;
+  symptoms?: string;
+  temperature?: number;
+  spo2?: number;
+  smoker?: boolean;
+}
+
 export const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ?? "http://localhost:8000";
 
@@ -26,10 +38,19 @@ export const api = {
     return json(await fetch(`${API_BASE}/api/studies/${id}/comparison`));
   },
 
-  async uploadStudy(file: File, patientId?: string): Promise<Study> {
+  async uploadStudy(file: File, meta?: UploadMeta): Promise<Study> {
     const fd = new FormData();
     fd.append("file", file);
-    if (patientId) fd.append("patient_id", patientId);
+    if (meta?.patientId) fd.append("patient_id", meta.patientId);
+    if (meta?.patientName) fd.append("patient_name", meta.patientName);
+    if (meta?.age != null) fd.append("age", String(meta.age));
+    if (meta?.sex) fd.append("sex", meta.sex);
+    if (meta?.modality) fd.append("modality", meta.modality);
+    if (meta?.symptoms) fd.append("symptoms", meta.symptoms);
+    if (meta?.temperature != null)
+      fd.append("temperature", String(meta.temperature));
+    if (meta?.spo2 != null) fd.append("spo2", String(meta.spo2));
+    fd.append("smoker", meta?.smoker ? "true" : "false");
     return json(
       await fetch(`${API_BASE}/api/studies`, { method: "POST", body: fd })
     );
