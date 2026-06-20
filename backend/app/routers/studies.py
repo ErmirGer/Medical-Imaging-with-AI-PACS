@@ -58,6 +58,7 @@ def to_study_out(study: Study, session) -> StudyOut:
         modality=study.modality,
         uploaded_at=study.uploaded_at.isoformat(),
         risk_score=study.risk_score,
+        risk_base=study.risk_base or study.risk_score,
         risk_band=study.risk_band,
         top_finding=study.top_finding,
         findings=[
@@ -128,6 +129,7 @@ def persist_study(results: dict, patient: dict, session) -> Study:
         clinical_adjustment=risk.get("clinical_adjustment", 0),
         clinical_factors=json.dumps(risk.get("clinical_factors", [])),
         risk_score=risk["score"],
+        risk_base=risk.get("base_score", risk["score"]),
         risk_band=risk["band"],
         top_finding=risk["driver"],
         report_en=rep["impression_en"],

@@ -47,6 +47,7 @@ export interface Study {
   modality: string;
   uploaded_at: string;
   risk_score: number;
+  risk_base?: number;
   risk_band: "High" | "Medium" | "Low";
   top_finding: string;
   findings: Finding[];

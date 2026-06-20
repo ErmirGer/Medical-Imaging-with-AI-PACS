@@ -45,6 +45,7 @@ class Study(SQLModel, table=True):
     clinical_factors: str = ""  # JSON list of human-readable clinical drivers
 
     risk_score: int = 0
+    risk_base: int = 0  # imaging-only score before clinical fusion
     risk_band: str = "Low"
     top_finding: str = ""
 

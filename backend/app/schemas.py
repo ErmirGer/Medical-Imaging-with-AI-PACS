@@ -57,6 +57,7 @@ class StudyOut(BaseModel):
     modality: str
     uploaded_at: str
     risk_score: int
+    risk_base: int = 0
     risk_band: str
     top_finding: str
     findings: list[FindingOut]

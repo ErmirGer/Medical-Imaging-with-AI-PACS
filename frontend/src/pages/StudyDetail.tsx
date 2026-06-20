@@ -53,6 +53,49 @@ export default function StudyDetail() {
         <RiskBadge score={study.risk_score} band={study.risk_band} size="lg" />
       </div>
 
+      {(() => {
+        const base = study.risk_base ?? study.risk_score;
+        const adj = study.clinical?.adjustment ?? 0;
+        if (adj <= 0) return null;
+        const raw = base + adj;
+        const capped = raw > 100;
+        const basePct = (base / raw) * 100;
+        const adjPct = (adj / raw) * 100;
+        return (
+          <div className="mb-5 rounded-xl border border-edge bg-panel p-4">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="font-semibold uppercase tracking-wide text-slate-400">
+                Risk breakdown
+              </span>
+              <span className="text-slate-400">
+                <span className="text-slate-200">{base}</span> imaging
+                <span className="mx-1 text-slate-600">+</span>
+                <span className="text-high">{adj}</span> clinical
+                <span className="mx-1 text-slate-600">=</span>
+                <span className="font-semibold text-slate-100">
+                  {study.risk_score}
+                </span>
+                {capped && (
+                  <span className="ml-1 text-xs text-slate-500">(capped 100)</span>
+                )}
+              </span>
+            </div>
+            <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-700/40">
+              <div
+                className="h-full bg-accent/70"
+                style={{ width: `${basePct}%` }}
+                title={`Imaging score: ${base}`}
+              />
+              <div
+                className="h-full bg-high"
+                style={{ width: `${adjPct}%` }}
+                title={`Clinical fusion: +${adj}`}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-4">
           <Viewer study={study} />
