@@ -213,6 +213,46 @@ def ack_alert(study_id: int):
         return {"acknowledged": True, "study_id": study_id}
 
 
+@router.get("/studies/{study_id}/comparison")
+def comparison(study_id: int):
+    """Mocked prior-study comparison: find an earlier study for the same patient
+    and return a templated progression delta built from the real risk scores.
+    """
+    with get_session() as session:
+        study = session.get(Study, study_id)
+        if not study:
+            raise HTTPException(404, "study not found")
+        priors = session.exec(
+            select(Study).where(Study.patient_id == study.patient_id)
+        ).all()
+        priors = [
+            s for s in priors if s.id != study.id and s.uploaded_at < study.uploaded_at
+        ]
+        if not priors:
+            return {"has_prior": False}
+        prior = max(priors, key=lambda s: s.uploaded_at)
+        delta = study.risk_score - prior.risk_score
+        direction = "increased" if delta > 0 else "decreased" if delta < 0 else "unchanged"
+        drejtim = "rritur" if delta > 0 else "ulur" if delta < 0 else "pa ndryshim"
+        return {
+            "has_prior": True,
+            "prior_id": prior.id,
+            "prior_score": prior.risk_score,
+            "current_score": study.risk_score,
+            "delta": delta,
+            "prior_finding": prior.top_finding,
+            "current_finding": study.top_finding,
+            "summary_en": (
+                f"Compared to the prior study, {study.top_finding.lower()} extent has "
+                f"{direction} (risk {prior.risk_score} → {study.risk_score}, Δ{delta:+d})."
+            ),
+            "summary_sq": (
+                f"Krahasuar me studimin e mëparshëm, shtrirja e {study.top_finding.lower()} "
+                f"është {drejtim} (rrezik {prior.risk_score} → {study.risk_score}, Δ{delta:+d})."
+            ),
+        }
+
+
 @router.post("/seed")
 def seed():
     from ..services.seed import run_seed

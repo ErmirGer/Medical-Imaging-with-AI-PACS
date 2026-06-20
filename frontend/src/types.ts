@@ -45,6 +45,18 @@ export interface Study {
   alert: AlertInfo | null;
 }
 
+export interface Comparison {
+  has_prior: boolean;
+  prior_id?: number;
+  prior_score?: number;
+  current_score?: number;
+  delta?: number;
+  prior_finding?: string;
+  current_finding?: string;
+  summary_en?: string;
+  summary_sq?: string;
+}
+
 export type Role = "radiologist" | "emergency" | "cardiology" | "surgery";
 
 export interface AlertEvent {

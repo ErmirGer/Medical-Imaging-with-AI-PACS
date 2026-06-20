@@ -1,4 +1,4 @@
-import type { Study } from "./types";
+import type { Study, Comparison } from "./types";
 
 export const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ?? "http://localhost:8000";
@@ -20,6 +20,10 @@ export const api = {
 
   async getStudy(id: number): Promise<Study> {
     return json(await fetch(`${API_BASE}/api/studies/${id}`));
+  },
+
+  async getComparison(id: number): Promise<Comparison> {
+    return json(await fetch(`${API_BASE}/api/studies/${id}/comparison`));
   },
 
   async uploadStudy(file: File, patientId?: string): Promise<Study> {
