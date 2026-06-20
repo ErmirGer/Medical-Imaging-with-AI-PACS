@@ -218,10 +218,12 @@ async def create_study(
         # resolve / create patient only after a successful analysis
         patient = None
         if patient_id:
+            # an explicit Patient ID is the canonical key — it distinguishes
+            # different people who share a name/age/sex, so never merge by name
             patient = session.get(Patient, patient_id)
-        if patient is None:
-            # group repeat uploads: reuse an existing patient with the same
-            # name + age + sex so multiple studies accumulate under one record
+        else:
+            # no ID given: group repeat uploads by name + age + sex so multiple
+            # studies accumulate under one record
             patient = session.exec(
                 select(Patient).where(
                     Patient.name == name,

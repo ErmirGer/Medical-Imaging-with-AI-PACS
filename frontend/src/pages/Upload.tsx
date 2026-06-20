@@ -23,6 +23,7 @@ export default function Upload() {
 
   // patient + acquisition
   const [modality, setModality] = useState("DX");
+  const [patientId, setPatientId] = useState("");
   const [patientName, setPatientName] = useState("");
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("");
@@ -68,6 +69,7 @@ export default function Upload() {
     try {
       const meta: UploadMeta = {
         modality,
+        patientId: patientId.trim() || undefined,
         patientName: patientName.trim(),
         age: Number(age),
         sex,
@@ -126,8 +128,8 @@ export default function Upload() {
       </div>
 
       {/* Patient (required) */}
-      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="sm:col-span-1">
+      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
           <label className={labelCls}>
             Patient name <span className="text-high">*</span>
           </label>
@@ -138,6 +140,21 @@ export default function Upload() {
             onChange={(e) => setPatientName(e.target.value)}
           />
         </div>
+        <div>
+          <label className={labelCls}>Patient ID</label>
+          <input
+            className={field}
+            placeholder="e.g. MRN-001 (optional)"
+            value={patientId}
+            onChange={(e) => setPatientId(e.target.value)}
+          />
+          <p className="mt-1 text-[11px] text-slate-500">
+            Use a unique ID to tell apart patients with the same name, age &amp;
+            sex. Reusing an ID groups their studies together.
+          </p>
+        </div>
+      </div>
+      <div className="mb-5 grid grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>
             Age <span className="text-high">*</span>
