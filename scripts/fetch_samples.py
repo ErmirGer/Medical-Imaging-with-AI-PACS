@@ -1,8 +1,20 @@
-"""Download a handful of real public chest X-ray images for the demo.
+"""Download the real, provenance-documented chest X-rays used for the demo seed.
 
-Sources are public/research datasets. We download a spread of likely-positive
-and likely-normal images; the actual model scores (printed by curate_samples)
-decide which become the curated demo cases.
+Every image is a genuine radiograph from a recognized public dataset; the source
+of each is recorded in data/samples/manifest.json and mirrored below.
+
+- NIH ChestX-ray14 (NIH Clinical Center, public domain) — the canonical
+  00000001_000 / 00027426_000 radiographs, distributed with torchxrayvision.
+- COVID-19 Image Data Collection (Cohen et al., JMLR 2020, CC BY-NC-SA).
+- Wikimedia Commons — a clean normal PA chest film (public domain).
+
+NOTE on the other challenge datasets: RSNA Pneumonia Detection and VinBigData
+Chest X-ray are distributed via Kaggle and require an account + license
+acceptance, so they cannot be pulled unattended here. They are, however, part of
+the data the AI model was trained on: torchxrayvision's `densenet121-res224-all`
+weights are trained on the union of NIH ChestX-ray14, RSNA, CheXpert, MIMIC-CXR
+and PadChest. To use official RSNA/VinBigData images, download them from Kaggle,
+drop the files in data/samples/, add entries to manifest.json, and re-seed.
 
 Usage:  python scripts/fetch_samples.py
 """
@@ -15,26 +27,18 @@ from pathlib import Path
 OUT = Path(__file__).resolve().parents[1] / "data" / "samples"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# (filename, url) — public chest X-ray images.
-# covid-chestxray-dataset (ieee8023) holds real CXRs with strong findings;
-# Wikimedia holds clean normal PA views.
+_XRV = "https://raw.githubusercontent.com/mlmed/torchxrayvision/main/tests/"
+
+# (filename, url) — keep in sync with data/samples/manifest.json
 CANDIDATES = [
-    # strong pneumonia / consolidation cases
-    ("pneumonia_1.jpg",
-     "https://raw.githubusercontent.com/ieee8023/covid-chestxray-dataset/master/images/1-s2.0-S0140673620303706-fx1_lrg.jpg"),
-    ("pneumonia_2.jpg",
-     "https://raw.githubusercontent.com/ieee8023/covid-chestxray-dataset/master/images/auntminnie-a-2020_01_28_23_51_6665_2020_01_28_Vietnam_coronavirus.jpeg"),
-    ("pneumonia_3.jpg",
-     "https://raw.githubusercontent.com/ieee8023/covid-chestxray-dataset/master/images/nejmoa2001191_f3-PA.jpeg"),
-    ("effusion_1.jpg",
-     "https://raw.githubusercontent.com/ieee8023/covid-chestxray-dataset/master/images/nejmoa2001191_f1-PA.jpeg"),
-    ("pneumonia_4.jpg",
-     "https://raw.githubusercontent.com/ieee8023/covid-chestxray-dataset/master/images/ryct.2020200028.fig1a.jpeg"),
-    # normal PA chest film
-    ("normal_1.png",
-     "https://upload.wikimedia.org/wikipedia/commons/c/c8/Chest_Xray_PA_3-8-2010.png"),
-    ("normal_2.jpg",
-     "https://upload.wikimedia.org/wikipedia/commons/e/e2/Normal_posteroanterior_%28PA%29_chest_radiograph_%28X-ray%29.jpg"),
+    ("nih_chestxray14_00000001.png", _XRV + "00000001_000.png"),
+    ("nih_chestxray14_00027426.png", _XRV + "00027426_000.png"),
+    ("covid_collection_pneumonia_58.jpg", _XRV + "covid-19-pneumonia-58-prior.jpg"),
+    ("xrv_sample_16747.jpg", _XRV + "16747_3_1.jpg"),
+    (
+        "normal_wikimedia_pa.png",
+        "https://commons.wikimedia.org/wiki/Special:FilePath/Chest_Xray_PA_3-8-2010.png",
+    ),
 ]
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (RadGuard demo fetch)"}
@@ -47,7 +51,7 @@ def fetch(name: str, url: str) -> bool:
         return True
     try:
         req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.urlopen(req, timeout=60) as r:
             data = r.read()
         dst.write_bytes(data)
         print(f"  + {name} ({len(data)//1024} KB)")

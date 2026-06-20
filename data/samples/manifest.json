@@ -1,44 +1,54 @@
 [
   {
-    "file": "pneumonia_3.jpg",
+    "file": "nih_chestxray14_00000001.png",
     "patient_id": "P-001",
     "study_uid": "1.2.826.0.1.3680043.8.498.10001",
+    "source": "NIH ChestX-ray14 (NIH Clinical Center, public domain) — image 00000001_000",
+    "finding": "Cardiomegaly (dataset label)",
     "note": "Ardit Krasniqi — PRIOR study (Medium), for progression comparison"
   },
   {
-    "file": "pneumonia_1.jpg",
+    "file": "nih_chestxray14_00027426.png",
     "patient_id": "P-001",
     "study_uid": "1.2.826.0.1.3680043.8.498.10002",
-    "note": "Ardit Krasniqi — CURRENT study, hero High case (Pneumonia 0.93)",
+    "source": "NIH ChestX-ray14 (NIH Clinical Center, public domain) — image 00027426_000",
+    "finding": "Mass / Nodule (model-detected)",
+    "note": "Ardit Krasniqi — CURRENT study, High case for progression vs prior",
     "clinical": {
-      "symptoms": "productive cough, dyspnea, pleuritic chest pain (3 days)",
-      "temperature": 39.1,
-      "spo2": 89,
+      "symptoms": "worsening cough, weight loss, fatigue (weeks)",
+      "temperature": 37.6,
+      "spo2": 93,
       "smoker": true
     }
   },
   {
-    "file": "normal_1.png",
-    "patient_id": "P-002",
-    "study_uid": "1.2.826.0.1.3680043.8.498.10003",
-    "note": "Mirela Shala — Low / normal contrast case"
-  },
-  {
-    "file": "pneumonia_2.jpg",
+    "file": "covid_collection_pneumonia_58.jpg",
     "patient_id": "P-003",
     "study_uid": "1.2.826.0.1.3680043.8.498.10004",
-    "note": "Sokol Berisha — second High case"
-  },
-  {
-    "file": "effusion_1.jpg",
-    "patient_id": "P-004",
-    "study_uid": "1.2.826.0.1.3680043.8.498.10005",
-    "note": "Drita Hysenaj — Medium case",
+    "source": "COVID-19 Image Data Collection (Cohen et al., JMLR 2020), CC BY-NC-SA",
+    "finding": "Pneumonia (dataset label)",
+    "note": "Sokol Berisha — hero High case with acute clinical context",
     "clinical": {
-      "symptoms": "shortness of breath on exertion",
-      "temperature": 37.2,
-      "spo2": 94,
+      "symptoms": "productive cough, dyspnea, pleuritic chest pain (3 days)",
+      "temperature": 39.1,
+      "spo2": 89,
       "smoker": false
     }
+  },
+  {
+    "file": "xrv_sample_16747.jpg",
+    "patient_id": "P-004",
+    "study_uid": "1.2.826.0.1.3680043.8.498.10005",
+    "source": "torchxrayvision public sample chest radiograph",
+    "finding": "Nodule / Mass (model-detected)",
+    "note": "Drita Hysenaj — second High case"
+  },
+  {
+    "file": "normal_wikimedia_pa.png",
+    "patient_id": "P-002",
+    "study_uid": "1.2.826.0.1.3680043.8.498.10003",
+    "source": "Wikimedia Commons — normal PA chest radiograph (public domain)",
+    "finding": "No acute finding (normal)",
+    "note": "Mirela Shala — Low / normal case"
   }
 ]
