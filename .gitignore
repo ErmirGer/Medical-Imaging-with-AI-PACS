@@ -20,3 +20,11 @@ frontend/.vite/
 # os
 .DS_Store
 Thumbs.db
+
+# test / demo artifacts
+.playwright-mcp/
+/worklist.png
+/study_detail.png
+/emergency_board.png
+/sse_toast.png
+data/samples/_test_*.png
