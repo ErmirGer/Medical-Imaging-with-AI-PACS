@@ -25,6 +25,29 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* atmospheric brand glows behind everything */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(55rem 28rem at 85% -8%, rgba(25, 200, 182, 0.12), transparent 60%),
+    radial-gradient(48rem 28rem at -8% 4%, rgba(34, 224, 208, 0.07), transparent 55%);
+}
+/* faint dotted grid for texture */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(80% 60% at 50% 0%, #000 30%, transparent 100%);
+}
+
 @layer base {
   /* crisp display type — negative tracking like the Linear system */
   h1,
@@ -54,10 +77,24 @@ body {
   }
   /* gentle hover lift for interactive cards */
   .lift {
-    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
   .lift:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+  }
+  /* frosted glass surface */
+  .glass {
+    background: rgba(17, 26, 43, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  /* teal gradient text */
+  .grad-text {
+    background: linear-gradient(135deg, #2dd4c4 0%, #34e0d0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
 

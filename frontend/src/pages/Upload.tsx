@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { UploadCloud, Loader2, Activity, X, AlertTriangle } from "lucide-react";
 import { api, type UploadMeta } from "../api";
+import PageHero from "../components/PageHero";
 
 const MODALITIES = [
   { id: "DX", label: "X-ray" },
@@ -96,11 +97,11 @@ export default function Upload() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-1 text-2xl font-bold">New study</h1>
-      <p className="mb-6 text-sm text-slate-400">
-        Enter the patient details, attach an image, then run the analysis. The
-        image is analyzed, scored, archived to PACS, and reported automatically.
-      </p>
+      <PageHero
+        icon={<UploadCloud size={22} />}
+        title="New study"
+        subtitle="Enter patient details, attach an image, then run the analysis — scored, archived to PACS & reported automatically."
+      />
 
       {/* Modality */}
       <div className="mb-5">
