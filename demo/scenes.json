@@ -1,0 +1,67 @@
+[
+  {
+    "shot": "01_intro",
+    "dur": 5.427,
+    "target": 5.877
+  },
+  {
+    "shot": "02_problem",
+    "dur": 8.139,
+    "target": 8.589
+  },
+  {
+    "shot": "03_login",
+    "dur": 8.715,
+    "target": 9.165
+  },
+  {
+    "shot": "04_worklist",
+    "dur": 6.387,
+    "target": 6.837
+  },
+  {
+    "shot": "05_upload",
+    "dur": 7.419,
+    "target": 7.869
+  },
+  {
+    "shot": "06_study_top",
+    "dur": 11.403,
+    "target": 11.853
+  },
+  {
+    "shot": "07_study_findings",
+    "dur": 7.107,
+    "target": 7.557
+  },
+  {
+    "shot": "08_report_sq",
+    "dur": 5.187,
+    "target": 5.637
+  },
+  {
+    "shot": "12_pacs",
+    "dur": 6.531,
+    "target": 6.981
+  },
+  {
+    "shot": "09_board",
+    "dur": 7.251,
+    "target": 7.701
+  },
+  {
+    "shot": "10_print",
+    "dur": 4.731,
+    "target": 5.181
+  },
+  {
+    "shot": "11_patient",
+    "dur": 4.515,
+    "target": 4.965
+  },
+  {
+    "shot": "13_outcome",
+    "dur": 16.275,
+    "target": 16.725
+  }
+]

@@ -1,11 +1,19 @@
-"""Build the skaNova demo video: Albanian VO (edge-tts) + Ken Burns/fades (ffmpeg).
+"""Build the skaNova demo video.
 
-Run with the backend venv python (has edge-tts, imageio-ffmpeg, tinytag):
+Pipeline:
+  1. generate Albanian VO per scene (edge-tts sq-AL)
+  2. write scenes.json (shot + VO duration + target length)
+  3. run frontend/demo-record.mjs -> records REAL app navigation as webm per scene
+  4. mux each webm with its VO (smooth fades, stereo 48k audio) -> clip mp4
+  5. concat -> demo/skanova_demo.mp4
+
+Run with the backend venv python (edge-tts, imageio-ffmpeg, tinytag):
     backend/.venv/Scripts/python.exe demo/build_video.py
 """
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import subprocess
 import sys
@@ -15,25 +23,27 @@ import imageio_ffmpeg
 from tinytag import TinyTag
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SHOTS = os.path.join(HERE, "shots")
+ROOT = os.path.dirname(HERE)
+FRONTEND = os.path.join(ROOT, "frontend")
 VO = os.path.join(HERE, "vo")
+REC = os.path.join(HERE, "rec")
 CLIPS = os.path.join(HERE, "clips")
 OUT = os.path.join(HERE, "skanova_demo.mp4")
+SCENES_JSON = os.path.join(HERE, "scenes.json")
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 VOICE = "sq-AL-AnilaNeural"
-BG = "0x070b14"
 FPS = 30
-TAIL = 0.4  # silent breathing room after each line
-FADE = 0.3
+PAD = 0.45   # silent breathing room after each VO line
+FADE = 0.35
 
-os.makedirs(VO, exist_ok=True)
-os.makedirs(CLIPS, exist_ok=True)
+for d in (VO, CLIPS):
+    os.makedirs(d, exist_ok=True)
 
-# (shot file, Albanian narration)
+# (shot file, Albanian narration) — order defines the video
 SCENES = [
     ("01_intro",
-     "skaNova — inteligjencë artificiale për imazherinë mjekësore dhe arkivimin "
-     "në PACS, ndërtuar për spitalet shqiptare."),
+     "skaNova — inteligjencë artificiale për imazherinë mjekësore dhe "
+     "arkivimin në PACS."),
     ("02_problem",
      "Interpretimi manual sjell vonesa dhe humbje diagnostike. Mungon arkivimi "
      "qendror dhe aksesi mes departamenteve."),
@@ -85,49 +95,62 @@ def dur(path: str) -> float:
     return float(TinyTag.get(path).duration or 0.0)
 
 
-def build_clip(shot: str) -> tuple[str, float]:
-    img = os.path.join(SHOTS, f"{shot}.png")
+def build_clip(shot: str, target: float) -> str:
+    webm = os.path.join(REC, f"{shot}.webm")
     audio = os.path.join(VO, f"{shot}.mp3")
     clip = os.path.join(CLIPS, f"{shot}.mp4")
-    d = dur(audio) + TAIL
-    frames = max(1, round(d * FPS))
-    fade_out = max(0.0, d - FADE)
+    fade_out = max(0.0, target - FADE)
     vf = (
-        "scale=2304:1296:force_original_aspect_ratio=decrease,"
-        f"pad=2304:1296:(ow-iw)/2:(oh-ih)/2:color={BG},"
-        f"zoompan=z=min(zoom+0.00035\\,1.08):d={frames}"
-        ":x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):s=1920x1080:fps={fps},".format(fps=FPS)
-        + f"fade=t=in:st=0:d={FADE},"
-        + f"fade=t=out:st={fade_out:.2f}:d={FADE},"
-        + "format=yuv420p"
+        "scale=1920:1080:force_original_aspect_ratio=increase,"
+        "crop=1920:1080,fps=30,"
+        f"fade=t=in:st=0:d={FADE},"
+        f"fade=t=out:st={fade_out:.2f}:d={FADE},"
+        "format=yuv420p"
     )
+    af = "aresample=48000,aformat=channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11"
     cmd = [
-        FFMPEG, "-y", "-i", img, "-i", audio,
-        "-filter_complex", f"[0:v]{vf}[v]",
-        "-map", "[v]", "-map", "1:a",
+        FFMPEG, "-y", "-i", webm, "-i", audio,
+        "-filter_complex", f"[0:v]{vf}[v];[1:a]{af}[a]",
+        "-map", "[v]", "-map", "[a]", "-t", f"{target:.3f}",
         "-r", str(FPS), "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
-        "-movflags", "+faststart", clip,
+        "-pix_fmt", "yuv420p", "-c:a", "aac", "-ar", "48000", "-ac", "2",
+        "-b:a", "192k", "-movflags", "+faststart", clip,
     ]
     subprocess.run(cmd, check=True, capture_output=True)
-    print(f"clip {shot}  {d:5.1f}s")
-    return clip, d
+    print(f"clip {shot}  {target:5.1f}s")
+    return clip
 
 
 def main() -> None:
+    # 1. VO
     asyncio.run(gen_vo())
-    clips, total = [], 0.0
-    for shot, _ in SCENES:
-        clip, d = build_clip(shot)
-        clips.append(clip)
-        total += d
 
+    # 2. scenes.json with targets
+    scenes = [
+        {"shot": shot, "dur": round(dur(os.path.join(VO, f"{shot}.mp3")), 3)}
+        for shot, _ in SCENES
+    ]
+    for s in scenes:
+        s["target"] = round(s["dur"] + PAD, 3)
+    with open(SCENES_JSON, "w", encoding="utf-8") as f:
+        json.dump(scenes, f, ensure_ascii=False, indent=2)
+
+    # 3. record real navigation
+    print("\nrecording app navigation (playwright)...")
+    subprocess.run(["node", "demo-record.mjs"], cwd=FRONTEND, check=True)
+
+    # 4. clips
+    print()
+    clips, total = [], 0.0
+    for s in scenes:
+        clips.append(build_clip(s["shot"], s["target"]))
+        total += s["target"]
+
+    # 5. concat (clips are uniform -> stream copy; re-encode fallback)
     listfile = os.path.join(CLIPS, "list.txt")
     with open(listfile, "w", encoding="utf-8") as f:
         for c in clips:
             f.write(f"file '{c.replace(os.sep, '/')}'\n")
-
-    # try stream-copy concat; fall back to re-encode if it complains
     concat = [FFMPEG, "-y", "-f", "concat", "-safe", "0", "-i", listfile,
               "-c", "copy", "-movflags", "+faststart", OUT]
     r = subprocess.run(concat, capture_output=True, text=True)
@@ -135,8 +158,8 @@ def main() -> None:
         print("copy concat failed, re-encoding...")
         concat = [FFMPEG, "-y", "-f", "concat", "-safe", "0", "-i", listfile,
                   "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-                  "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
-                  "-movflags", "+faststart", OUT]
+                  "-pix_fmt", "yuv420p", "-c:a", "aac", "-ar", "48000", "-ac", "2",
+                  "-b:a", "192k", "-movflags", "+faststart", OUT]
         subprocess.run(concat, check=True)
 
     mm, ss = divmod(round(total), 60)

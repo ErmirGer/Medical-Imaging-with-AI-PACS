@@ -34,4 +34,6 @@ data/samples/_test_*.png
 demo/shots/
 demo/clips/
 demo/vo/
+demo/rec/
+demo/_f*.png
 demo/_frame_check.png
