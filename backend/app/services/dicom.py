@@ -42,7 +42,7 @@ def png_to_dicom_bytes(
     ds.SOPClassUID = SecondaryCaptureImageStorage
     ds.Modality = modality or "DX"
     ds.StudyDate = datetime.date.today().strftime("%Y%m%d")
-    ds.SeriesDescription = f"RadGuard {ds.Modality}"
+    ds.SeriesDescription = f"skaNova {ds.Modality}"
     ds.Rows, ds.Columns = arr.shape
     ds.SamplesPerPixel = 1
     ds.PhotometricInterpretation = "MONOCHROME2"

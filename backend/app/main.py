@@ -10,7 +10,7 @@ from .routers import auth, departments, studies, stream
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("radguard")
 
-app = FastAPI(title="RadGuard API")
+app = FastAPI(title="skaNova API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,4 +40,4 @@ def _startup() -> None:
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "service": "radguard"}
+    return {"status": "ok", "service": "skanova"}

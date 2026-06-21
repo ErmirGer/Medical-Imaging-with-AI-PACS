@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import {
-  ShieldPlus,
   LayoutGrid,
   ListChecks,
   Upload as UploadIcon,
   Radio,
   LogOut,
 } from "lucide-react";
+import Logo from "./components/Logo";
 import { useRole, ROLE_LABELS, useAuth } from "./store";
 import { useAlerts } from "./useAlerts";
 import AlertToast from "./components/AlertToast";
@@ -51,12 +51,10 @@ export default function App() {
       <header className="sticky top-0 z-40 border-b border-edge bg-surface/90 backdrop-blur print:hidden">
         <div className="h-0.5 w-full bg-brand-gradient" />
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 py-3">
-          <Link to="/" className="mr-4 flex items-center gap-2">
-            <div className="rounded-xl bg-brand-gradient p-1.5 shadow-lg shadow-accent/20">
-              <ShieldPlus className="text-slate-900" size={20} />
-            </div>
+          <Link to="/" className="mr-4 flex items-center gap-2.5">
+            <Logo size={34} />
             <span className="text-lg font-extrabold tracking-tight">
-              Rad<span className="text-accent">Guard</span>
+              ska<span className="text-accent">Nova</span>
             </span>
           </Link>
 

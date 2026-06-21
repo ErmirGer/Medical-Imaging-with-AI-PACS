@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ShieldPlus, Stethoscope, User, Loader2, AlertTriangle } from "lucide-react";
+import { Stethoscope, User, Loader2, AlertTriangle } from "lucide-react";
+import Logo from "../components/Logo";
 import { api } from "../api";
 import { useAuth } from "../store";
 import type { AccountRole } from "../types";
@@ -65,11 +66,9 @@ export default function Auth() {
 
       <div className="relative w-full max-w-md">
         <div className="mb-2 flex items-center justify-center gap-2.5">
-          <div className="rounded-xl bg-brand-gradient p-2 shadow-lg shadow-accent/30">
-            <ShieldPlus className="text-slate-900" size={26} />
-          </div>
+          <Logo size={48} />
           <span className="text-2xl font-extrabold tracking-tight">
-            Rad<span className="text-accent">Guard</span>
+            ska<span className="text-accent">Nova</span>
           </span>
         </div>
         {/* ECG heartbeat motif */}
