@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, Stethoscope, User, Loader2, AlertTriangle } from "lucide-react";
+import { ShieldPlus, Stethoscope, User, Loader2, AlertTriangle } from "lucide-react";
 import { api } from "../api";
 import { useAuth } from "../store";
 import type { AccountRole } from "../types";
@@ -59,18 +59,38 @@ export default function Auth() {
   const label = "mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400";
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 flex items-center justify-center gap-2">
-          <div className="rounded-lg bg-accent/20 p-2">
-            <Activity className="text-accent" size={24} />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+      {/* soft brand glow */}
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-accent/10 blur-3xl" />
+
+      <div className="relative w-full max-w-md">
+        <div className="mb-2 flex items-center justify-center gap-2.5">
+          <div className="rounded-xl bg-brand-gradient p-2 shadow-lg shadow-accent/30">
+            <ShieldPlus className="text-slate-900" size={26} />
           </div>
           <span className="text-2xl font-extrabold tracking-tight">
             Rad<span className="text-accent">Guard</span>
           </span>
         </div>
+        {/* ECG heartbeat motif */}
+        <svg
+          viewBox="0 0 240 24"
+          className="mx-auto mb-1 h-5 w-56 text-accent/70"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M0 12 H80 l8 -9 l10 18 l9 -16 l7 7 H240" />
+        </svg>
+        <p className="mb-6 text-center text-xs text-slate-400">
+          AI medical imaging &amp; PACS
+        </p>
 
-        <div className="rounded-2xl border border-edge bg-panel/60 p-6">
+        <div className="overflow-hidden rounded-2xl border border-edge bg-panel/60">
+          <div className="h-1 w-full bg-brand-gradient" />
+          <div className="p-6">
           {/* login/signup toggle */}
           <div className="mb-5 flex overflow-hidden rounded-lg border border-edge text-sm">
             {(["login", "signup"] as const).map((m) => (
@@ -237,6 +257,7 @@ export default function Auth() {
                 Patient
               </button>
             </div>
+          </div>
           </div>
         </div>
       </div>

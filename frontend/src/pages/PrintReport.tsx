@@ -64,7 +64,7 @@ export default function PrintReport() {
         <div className="flex items-start justify-between border-b-2 border-slate-800 pb-3">
           <div>
             <div className="text-2xl font-extrabold tracking-tight">
-              Rad<span className="text-sky-600">Guard</span>
+              Rad<span className="text-teal-600">Guard</span>
             </div>
             <div className="text-xs text-slate-500">
               AI Diagnostic Imaging Report

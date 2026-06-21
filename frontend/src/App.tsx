@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import {
-  Activity,
+  ShieldPlus,
   LayoutGrid,
   ListChecks,
   Upload as UploadIcon,
@@ -49,10 +49,11 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-edge bg-surface/90 backdrop-blur print:hidden">
+        <div className="h-0.5 w-full bg-brand-gradient" />
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 py-3">
           <Link to="/" className="mr-4 flex items-center gap-2">
-            <div className="rounded-lg bg-accent/20 p-1.5">
-              <Activity className="text-accent" size={20} />
+            <div className="rounded-xl bg-brand-gradient p-1.5 shadow-lg shadow-accent/20">
+              <ShieldPlus className="text-slate-900" size={20} />
             </div>
             <span className="text-lg font-extrabold tracking-tight">
               Rad<span className="text-accent">Guard</span>
