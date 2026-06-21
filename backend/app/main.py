@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import init_db
-from .routers import departments, studies, stream
+from .routers import auth, departments, studies, stream
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("radguard")
@@ -20,6 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(studies.router)
 app.include_router(departments.router)
 app.include_router(stream.router)

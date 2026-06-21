@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from sqlmodel import select
 
 from ..db import get_session
-from ..models import Study
+from ..models import Account, Study
 from ..schemas import StudyOut
+from ..services import auth
 from .studies import to_study_out
 
 router = APIRouter(prefix="/api/departments", tags=["departments"])
@@ -49,10 +50,12 @@ def _relevant_finding(study: StudyOut, names: set[str]) -> str | None:
 
 
 @router.get("/{dept}/queue", response_model=list[StudyOut])
-def department_queue(dept: str):
+def department_queue(dept: str, account: Account = Depends(auth.require_doctor)):
     dept = dept.lower()
     with get_session() as session:
-        studies = session.exec(select(Study)).all()
+        studies = session.exec(
+            select(Study).where(Study.owner_account_id == account.id)
+        ).all()
         studies = sorted(studies, key=lambda s: s.risk_score, reverse=True)
         outs = [to_study_out(s, session) for s in studies]
 

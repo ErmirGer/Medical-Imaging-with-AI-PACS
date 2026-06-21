@@ -4,11 +4,13 @@ import { Database, Sparkles, ShieldAlert } from "lucide-react";
 import { api } from "../api";
 import RiskBadge from "../components/RiskBadge";
 import ClinicalSignals from "../components/ClinicalSignals";
+import { useAuth } from "../store";
 import type { Study } from "../types";
 
 export default function Worklist() {
   const qc = useQueryClient();
   const nav = useNavigate();
+  const isDoctor = useAuth((s) => s.account?.role === "doctor");
   const { data: studies, isLoading } = useQuery({
     queryKey: ["studies"],
     queryFn: () => api.listStudies("risk"),
@@ -24,24 +26,34 @@ export default function Worklist() {
     <div>
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Radiologist Worklist</h1>
-          <p className="text-sm text-slate-400">Auto-sorted by AI risk score</p>
+          <h1 className="text-2xl font-bold">
+            {isDoctor ? "Worklist" : "My Scans"}
+          </h1>
+          <p className="text-sm text-slate-400">
+            {isDoctor
+              ? "Your patients, auto-sorted by AI risk score"
+              : "Your imaging studies and reports"}
+          </p>
         </div>
-        <button
-          onClick={() => seed.mutate()}
-          disabled={seed.isPending}
-          className="inline-flex items-center gap-2 rounded-lg border border-edge bg-panel px-3 py-2 text-sm text-slate-300 hover:text-slate-100 disabled:opacity-50"
-        >
-          <Sparkles size={16} />
-          {seed.isPending ? "Seeding…" : "Load demo cases"}
-        </button>
+        {isDoctor && (
+          <button
+            onClick={() => seed.mutate()}
+            disabled={seed.isPending}
+            className="inline-flex items-center gap-2 rounded-lg border border-edge bg-panel px-3 py-2 text-sm text-slate-300 hover:text-slate-100 disabled:opacity-50"
+          >
+            <Sparkles size={16} />
+            {seed.isPending ? "Seeding…" : "Load demo cases"}
+          </button>
+        )}
       </div>
 
       {isLoading ? (
         <p className="text-slate-500">Loading…</p>
       ) : !studies?.length ? (
         <div className="rounded-xl border border-dashed border-edge p-12 text-center text-slate-500">
-          No studies yet. Upload an X-ray or load demo cases.
+          {isDoctor
+            ? "No studies yet. Upload a scan or load demo cases."
+            : "No scans on file yet. Your studies will appear here once a doctor uploads them."}
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-edge">

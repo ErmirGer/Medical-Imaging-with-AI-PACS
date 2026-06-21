@@ -9,8 +9,15 @@ from sqlmodel import select
 
 from ..config import settings
 from ..db import get_session
-from ..models import Alert, Patient, Study, User
+from ..models import Account, Alert, Patient, Study, User
+from . import auth
 from .pipeline import process
+
+# Demo accounts created on startup so the login page works out of the box.
+DEMO_DOCTOR = {"email": "doctor@radguard.dev", "password": "demo1234",
+               "name": "Dr. Besnik Marku", "department": "Radiology"}
+DEMO_PATIENT = {"email": "patient@radguard.dev", "password": "demo1234",
+                "name": "Ardit Krasniqi", "patient_id": "P-001"}
 
 log = logging.getLogger("radguard.seed")
 
@@ -46,10 +53,37 @@ def seed_if_empty() -> dict:
             for p in PATIENTS:
                 session.add(Patient(**p))
             session.commit()
+        _seed_accounts(session)
         return {
             "users": len(session.exec(select(User)).all()),
             "patients": len(session.exec(select(Patient)).all()),
+            "accounts": len(session.exec(select(Account)).all()),
         }
+
+
+def _seed_accounts(session) -> None:
+    """Create the demo doctor + patient logins if they don't exist."""
+    def ensure(email, password, role, name, **extra):
+        if session.exec(select(Account).where(Account.email == email)).first():
+            return
+        salt = auth.new_salt()
+        session.add(
+            Account(
+                email=email,
+                password_hash=auth.hash_password(password, salt),
+                salt=salt,
+                role=role,
+                name=name,
+                token=auth.new_token(),
+                **extra,
+            )
+        )
+        session.commit()
+
+    ensure(DEMO_DOCTOR["email"], DEMO_DOCTOR["password"], "doctor",
+           DEMO_DOCTOR["name"], department=DEMO_DOCTOR["department"])
+    ensure(DEMO_PATIENT["email"], DEMO_PATIENT["password"], "patient",
+           DEMO_PATIENT["name"], patient_id=DEMO_PATIENT["patient_id"])
 
 
 def _load_manifest() -> list[dict]:
@@ -67,7 +101,7 @@ def _load_manifest() -> list[dict]:
     return entries
 
 
-def run_seed() -> dict:
+def run_seed(owner_account_id: int | None = None) -> dict:
     """Process the sample images into studies (idempotent-ish; skips if studies exist)."""
     seed_if_empty()
     created = 0
@@ -103,7 +137,9 @@ def run_seed() -> dict:
                 results = process(
                     str(img_path), patient_d, study_uid, clinical=clinical
                 )
-                study = persist_study(results, patient_d, session)
+                study = persist_study(
+                    results, patient_d, session, owner_account_id=owner_account_id
+                )
                 # pre-create an alert for high-risk seeded studies so the
                 # Emergency board shows "the alert is already there".
                 if study.risk_band == "High" or study.risk_score >= settings.HIGH_RISK_THRESHOLD:

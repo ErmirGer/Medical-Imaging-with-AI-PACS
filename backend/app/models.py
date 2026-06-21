@@ -23,9 +23,24 @@ class User(SQLModel, table=True):
     department: str = ""
 
 
+class Account(SQLModel, table=True):
+    """Login account. role = doctor | patient."""
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(index=True)
+    password_hash: str = ""
+    salt: str = ""
+    role: str = "doctor"  # doctor | patient
+    name: str = ""
+    patient_id: str = ""  # for patients -> links to Patient.id
+    department: str = "Radiology"  # for doctors
+    token: str = ""  # current session bearer token
+
+
 class Study(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     patient_id: str = Field(foreign_key="patient.id")
+    owner_account_id: Optional[int] = None  # uploading doctor's account
     modality: str = "DX"
     region: str = ""  # body region detected by vision (e.g. "Hand", "Chest")
     analysis_source: str = "model"  # "model" (chest torchxrayvision) | "vision" (Claude)

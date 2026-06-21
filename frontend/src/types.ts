@@ -1,3 +1,14 @@
+export type AccountRole = "doctor" | "patient";
+
+export interface Account {
+  id: number;
+  email: string;
+  role: AccountRole;
+  name: string;
+  patient_id?: string;
+  department?: string;
+}
+
 export type Lang = "en" | "sq";
 
 export type Severity = "none" | "mild" | "moderate" | "severe";

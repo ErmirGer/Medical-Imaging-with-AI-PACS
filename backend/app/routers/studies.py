@@ -6,13 +6,14 @@ import shutil
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlmodel import select
 
 from ..config import settings
 from ..db import get_session
-from ..models import Alert, Finding, Patient, Study
+from ..models import Account, Alert, Finding, Patient, Study
+from ..services import auth
 from ..schemas import (
     AlertOut,
     ClinicalOut,
@@ -126,7 +127,9 @@ def to_study_out(study: Study, session) -> StudyOut:
     )
 
 
-def persist_study(results: dict, patient: dict, session) -> Study:
+def persist_study(
+    results: dict, patient: dict, session, owner_account_id: int | None = None
+) -> Study:
     """Persist pipeline results to a Study + Findings rows. Caller commits."""
     risk = results["risk"]
     rep = results["report"]
@@ -134,6 +137,7 @@ def persist_study(results: dict, patient: dict, session) -> Study:
     conf = results.get("confidence") or {}
     study = Study(
         patient_id=patient["id"],
+        owner_account_id=owner_account_id,
         modality=results.get("modality", "DX"),
         region=results.get("region", "") or "",
         analysis_source=results.get("analysis_source", "model"),
@@ -195,6 +199,7 @@ async def create_study(
     temperature: float | None = Form(None),
     spo2: int | None = Form(None),
     smoker: bool = Form(False),
+    account: Account = Depends(auth.require_doctor),
 ):
     # 0. require patient identity before any analysis runs
     name = (patient_name or "").strip()
@@ -252,8 +257,8 @@ async def create_study(
             session.refresh(patient)
         patient_d["id"] = patient.id
 
-        # 7. persist
-        study = persist_study(results, patient_d, session)
+        # 7. persist (owned by the uploading doctor)
+        study = persist_study(results, patient_d, session, owner_account_id=account.id)
 
         # 8. high-risk alert
         if study.risk_band == "High" or study.risk_score >= settings.HIGH_RISK_THRESHOLD:
@@ -273,11 +278,21 @@ async def create_study(
 
 
 @router.get("/studies", response_model=list[StudyOut])
-def list_studies(sort: str | None = None, patient_id: str | None = None):
+def list_studies(
+    sort: str | None = None,
+    patient_id: str | None = None,
+    account: Account = Depends(auth.get_account),
+):
     with get_session() as session:
         query = select(Study)
-        if patient_id:
-            query = query.where(Study.patient_id == patient_id)
+        if account.role == "patient":
+            # patients only ever see their own record's studies
+            query = query.where(Study.patient_id == (account.patient_id or "__none__"))
+        else:
+            # doctors see studies they own; optional further filter by patient
+            query = query.where(Study.owner_account_id == account.id)
+            if patient_id:
+                query = query.where(Study.patient_id == patient_id)
         studies = session.exec(query).all()
         if sort == "risk":
             studies = sorted(studies, key=lambda s: s.risk_score, reverse=True)
@@ -287,19 +302,26 @@ def list_studies(sort: str | None = None, patient_id: str | None = None):
 
 
 @router.get("/studies/{study_id}", response_model=StudyOut)
-def get_study(study_id: int):
+def get_study(study_id: int, account: Account = Depends(auth.get_account)):
     with get_session() as session:
         study = session.get(Study, study_id)
-        if not study:
+        if not study or not auth.can_access_study(study, account):
             raise HTTPException(404, "study not found")
         return to_study_out(study, session)
 
 
 @router.get("/studies/{study_id}/image")
-def get_image(study_id: int, type: str = "original"):
+def get_image(
+    study_id: int,
+    type: str = "original",
+    authorization: str | None = Header(default=None),
+    token: str | None = None,
+):
+    # <img> tags can't send headers, so allow ?token= as a fallback
+    account = auth.get_account(authorization or (f"Bearer {token}" if token else None))
     with get_session() as session:
         study = session.get(Study, study_id)
-        if not study:
+        if not study or not auth.can_access_study(study, account):
             raise HTTPException(404, "study not found")
         path = study.heatmap_path if type == "heatmap" else study.original_path
         if not path or not Path(path).exists():
@@ -308,8 +330,11 @@ def get_image(study_id: int, type: str = "original"):
 
 
 @router.post("/studies/{study_id}/ack")
-def ack_alert(study_id: int):
+def ack_alert(study_id: int, account: Account = Depends(auth.require_doctor)):
     with get_session() as session:
+        study = session.get(Study, study_id)
+        if not study or not auth.can_access_study(study, account):
+            raise HTTPException(404, "study not found")
         alert = session.exec(select(Alert).where(Alert.study_id == study_id)).first()
         if not alert:
             raise HTTPException(404, "no alert for study")
@@ -320,13 +345,13 @@ def ack_alert(study_id: int):
 
 
 @router.get("/studies/{study_id}/comparison")
-def comparison(study_id: int):
+def comparison(study_id: int, account: Account = Depends(auth.get_account)):
     """Mocked prior-study comparison: find an earlier study for the same patient
     and return a templated progression delta built from the real risk scores.
     """
     with get_session() as session:
         study = session.get(Study, study_id)
-        if not study:
+        if not study or not auth.can_access_study(study, account):
             raise HTTPException(404, "study not found")
         priors = session.exec(
             select(Study).where(Study.patient_id == study.patient_id)
@@ -360,7 +385,8 @@ def comparison(study_id: int):
 
 
 @router.post("/seed")
-def seed():
+def seed(account: Account = Depends(auth.require_doctor)):
+    # seeded demo studies are owned by the doctor who loaded them
     from ..services.seed import run_seed
 
-    return run_seed()
+    return run_seed(owner_account_id=account.id)

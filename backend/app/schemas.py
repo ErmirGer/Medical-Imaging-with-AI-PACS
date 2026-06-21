@@ -3,6 +3,20 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class AccountOut(BaseModel):
+    id: int
+    email: str
+    role: str  # doctor | patient
+    name: str
+    patient_id: str = ""
+    department: str = ""
+
+
+class AuthOut(BaseModel):
+    token: str
+    account: AccountOut
+
+
 class PatientOut(BaseModel):
     id: str
     name: str
