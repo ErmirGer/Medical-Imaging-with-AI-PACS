@@ -97,8 +97,9 @@ def analyze(path: str, patient: dict | None = None, clinical: dict | None = None
             '"risk_score": integer 0-100, "risk_band": "Low" | "Medium" | "High", '
             '"driver": string, "quality": "good" | "poor", "quality_issue": string, '
             '"confidence": integer 0-100, "confidence_reason": string}.\n'
-            "confidence = how certain you are this analysis is CORRECT, calibrated "
-            "honestly (lower for limited/ambiguous/atypical images); "
+            "confidence = how certain you are this analysis is CORRECT. Most "
+            "readable images deserve HIGH confidence (typically 85-97); only lower "
+            "it for genuinely difficult/limited/ambiguous images. "
             "confidence_reason briefly says why and whether to double-check. "
             "severity = how clinically concerning each finding is ('none' for "
             "normal/reassuring observations). quality='poor' if too blurry/dark/"

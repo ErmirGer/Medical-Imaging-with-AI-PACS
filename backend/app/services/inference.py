@@ -209,13 +209,13 @@ def analysis_confidence(probabilities: list[float]) -> dict:
     pmax = max(ps)
     near = sum(1 for p in ps if 0.40 < p < 0.65)  # ambiguous cluster
     if pmax < 0.40:
-        score = 88.0  # nothing stands out -> confident normal
+        score = 92.0  # nothing stands out -> confident normal
     else:
-        score = 50.0 + (pmax - 0.5) * 130.0  # decisiveness of leading finding
-    # a few competing findings is normal; only a large ambiguous cluster hurts,
-    # and the penalty is capped so the score still reflects the leading finding
-    score -= min(20.0, 3.0 * max(0, near - 3))
-    score = max(8, min(97, round(score)))
+        score = 72.0 + (pmax - 0.5) * 120.0  # decisiveness of leading finding
+    # default to high confidence; only a genuinely difficult image (a LARGE
+    # cluster of competing mid-range findings) pulls it down toward double-check
+    score -= min(45.0, 4.0 * max(0, near - 6))
+    score = max(25, min(98, round(score)))
     return confidence_payload(score, borderline=near)
 
 

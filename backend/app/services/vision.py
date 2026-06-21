@@ -107,10 +107,11 @@ def analyze(path: str, patient: dict | None = None, clinical: dict | None = None
             '"quality": "good" | "poor", "quality_issue": string, '
             '"confidence": integer 0-100, "confidence_reason": string, '
             '"confidence_reason_sq": string}.\n'
-            "confidence = how certain you are this analysis is CORRECT, calibrated "
-            "honestly: lower it when the image is limited, the findings are subtle "
-            "or ambiguous, the appearance is atypical, or it is outside your "
-            "expertise; higher only when findings are clear and unambiguous. "
+            "confidence = how certain you are this analysis is CORRECT. Most "
+            "readable images deserve HIGH confidence (typically 85-97). Only lower "
+            "it for genuinely difficult images — heavily limited/blurry, truly "
+            "ambiguous or atypical findings, or outside your expertise (and rarely "
+            "below 60). "
             "confidence_reason (EN) and confidence_reason_sq (Albanian) briefly say "
             "why, and whether a specialist should double-check. "
             "Set severity to how clinically concerning each finding is: 'none' for "

@@ -14,9 +14,9 @@ from . import auth
 from .pipeline import process
 
 # Demo accounts created on startup so the login page works out of the box.
-DEMO_DOCTOR = {"email": "doctor@radguard.dev", "password": "demo1234",
+DEMO_DOCTOR = {"personal_number": "1234567890", "password": "demo1234",
                "name": "Dr. Besnik Marku", "department": "Radiology"}
-DEMO_PATIENT = {"email": "patient@radguard.dev", "password": "demo1234",
+DEMO_PATIENT = {"personal_number": "9876543210", "password": "demo1234",
                 "name": "Ardit Krasniqi", "patient_id": "P-001"}
 
 log = logging.getLogger("radguard.seed")
@@ -63,13 +63,15 @@ def seed_if_empty() -> dict:
 
 def _seed_accounts(session) -> None:
     """Create the demo doctor + patient logins if they don't exist."""
-    def ensure(email, password, role, name, **extra):
-        if session.exec(select(Account).where(Account.email == email)).first():
+    def ensure(personal_number, password, role, name, **extra):
+        if session.exec(
+            select(Account).where(Account.personal_number == personal_number)
+        ).first():
             return
         salt = auth.new_salt()
         session.add(
             Account(
-                email=email,
+                personal_number=personal_number,
                 password_hash=auth.hash_password(password, salt),
                 salt=salt,
                 role=role,
@@ -80,9 +82,9 @@ def _seed_accounts(session) -> None:
         )
         session.commit()
 
-    ensure(DEMO_DOCTOR["email"], DEMO_DOCTOR["password"], "doctor",
+    ensure(DEMO_DOCTOR["personal_number"], DEMO_DOCTOR["password"], "doctor",
            DEMO_DOCTOR["name"], department=DEMO_DOCTOR["department"])
-    ensure(DEMO_PATIENT["email"], DEMO_PATIENT["password"], "patient",
+    ensure(DEMO_PATIENT["personal_number"], DEMO_PATIENT["password"], "patient",
            DEMO_PATIENT["name"], patient_id=DEMO_PATIENT["patient_id"])
 
 

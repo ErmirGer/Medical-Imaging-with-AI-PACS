@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 class SignupBody(BaseModel):
-    email: str
+    personal_number: str
     password: str
     role: str = "doctor"  # doctor | patient
     name: str = ""
@@ -28,7 +28,7 @@ class SignupBody(BaseModel):
 
 
 class LoginBody(BaseModel):
-    email: str
+    personal_number: str
     password: str
 
 
@@ -37,7 +37,7 @@ def _out(acc: Account) -> AuthOut:
         token=acc.token,
         account=AccountOut(
             id=acc.id,
-            email=acc.email,
+            personal_number=acc.personal_number,
             role=acc.role,
             name=acc.name,
             patient_id=acc.patient_id,
@@ -48,18 +48,20 @@ def _out(acc: Account) -> AuthOut:
 
 @router.post("/signup", response_model=AuthOut)
 def signup(body: SignupBody):
-    email = body.email.strip().lower()
-    if not email or not body.password:
-        raise HTTPException(422, "Email and password are required.")
+    pn = body.personal_number.strip()
+    if not pn or not body.password:
+        raise HTTPException(422, "Personal number and password are required.")
     if len(body.password) < 6:
         raise HTTPException(422, "Password must be at least 6 characters.")
     role = body.role if body.role in {"doctor", "patient"} else "doctor"
-    name = body.name.strip() or email.split("@")[0]
+    name = body.name.strip() or pn
 
     with get_session() as session:
-        existing = session.exec(select(Account).where(Account.email == email)).first()
+        existing = session.exec(
+            select(Account).where(Account.personal_number == pn)
+        ).first()
         if existing:
-            raise HTTPException(409, "An account with this email already exists.")
+            raise HTTPException(409, "An account with this personal number already exists.")
 
         patient_id = ""
         if role == "patient":
@@ -79,7 +81,7 @@ def signup(body: SignupBody):
 
         salt = auth.new_salt()
         acc = Account(
-            email=email,
+            personal_number=pn,
             password_hash=auth.hash_password(body.password, salt),
             salt=salt,
             role=role,
@@ -96,13 +98,15 @@ def signup(body: SignupBody):
 
 @router.post("/login", response_model=AuthOut)
 def login(body: LoginBody):
-    email = body.email.strip().lower()
+    pn = body.personal_number.strip()
     with get_session() as session:
-        acc = session.exec(select(Account).where(Account.email == email)).first()
+        acc = session.exec(
+            select(Account).where(Account.personal_number == pn)
+        ).first()
         if acc is None or not auth.verify_password(
             body.password, acc.salt, acc.password_hash
         ):
-            raise HTTPException(401, "Invalid email or password.")
+            raise HTTPException(401, "Invalid personal number or password.")
         acc.token = auth.new_token()  # fresh session token
         session.add(acc)
         session.commit()
@@ -115,7 +119,7 @@ def me(authorization: str | None = Header(default=None)):
     acc = auth.get_account(authorization)
     return AccountOut(
         id=acc.id,
-        email=acc.email,
+        personal_number=acc.personal_number,
         role=acc.role,
         name=acc.name,
         patient_id=acc.patient_id,

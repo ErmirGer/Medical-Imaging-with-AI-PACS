@@ -2,7 +2,7 @@ export type AccountRole = "doctor" | "patient";
 
 export interface Account {
   id: number;
-  email: string;
+  personal_number: string;
   role: AccountRole;
   name: string;
   patient_id?: string;

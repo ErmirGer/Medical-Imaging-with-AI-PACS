@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class AccountOut(BaseModel):
     id: int
-    email: str
+    personal_number: str
     role: str  # doctor | patient
     name: str
     patient_id: str = ""

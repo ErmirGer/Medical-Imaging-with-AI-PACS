@@ -43,12 +43,15 @@ export const api = {
   },
 
   // --- auth ---
-  async login(email: string, password: string): Promise<{ token: string; account: Account }> {
+  async login(
+    personalNumber: string,
+    password: string,
+  ): Promise<{ token: string; account: Account }> {
     return json(
       await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ personal_number: personalNumber, password }),
       }),
     );
   },

@@ -27,7 +27,7 @@ class Account(SQLModel, table=True):
     """Login account. role = doctor | patient."""
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    email: str = Field(index=True)
+    personal_number: str = Field(index=True)  # national/personal ID used to log in
     password_hash: str = ""
     salt: str = ""
     role: str = "doctor"  # doctor | patient

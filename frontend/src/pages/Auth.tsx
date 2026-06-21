@@ -11,7 +11,7 @@ export default function Auth() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [email, setEmail] = useState("");
+  const [personalNumber, setPersonalNumber] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [department, setDepartment] = useState("Radiology");
@@ -26,9 +26,9 @@ export default function Auth() {
     try {
       const res =
         mode === "login"
-          ? await api.login(email.trim(), password)
+          ? await api.login(personalNumber.trim(), password)
           : await api.signup({
-              email: email.trim(),
+              personal_number: personalNumber.trim(),
               password,
               role,
               name: name.trim(),
@@ -50,7 +50,7 @@ export default function Auth() {
 
   function demo(kind: "doctor" | "patient") {
     setMode("login");
-    setEmail(kind === "doctor" ? "doctor@radguard.dev" : "patient@radguard.dev");
+    setPersonalNumber(kind === "doctor" ? "1234567890" : "9876543210");
     setPassword("demo1234");
   }
 
@@ -131,13 +131,13 @@ export default function Auth() {
             )}
 
             <div>
-              <label className={label}>Email</label>
+              <label className={label}>Personal number</label>
               <input
                 className={field}
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                type="text"
+                value={personalNumber}
+                onChange={(e) => setPersonalNumber(e.target.value)}
+                placeholder="e.g. 1234567890"
                 required
               />
             </div>
