@@ -16,10 +16,49 @@ body,
 
 body {
   margin: 0;
-  background: #0a1326;
-  color: #e2e8f0;
+  background: #070b14;
+  color: #e6eaf2;
   font-family: "Inter", system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  /* crisp display type — negative tracking like the Linear system */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.022em;
+  }
+  h1 {
+    letter-spacing: -0.03em;
+  }
+  /* teal focus ring everywhere, modern + accessible */
+  *:focus-visible {
+    outline: 2px solid rgba(25, 200, 182, 0.6);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: rgba(25, 200, 182, 0.28);
+    color: #f1f5f9;
+  }
+}
+
+@layer utilities {
+  /* faint top edge highlight on lifted panels — the "pixel-rendered" depth cue */
+  .edge-hl {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+  /* gentle hover lift for interactive cards */
+  .lift {
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  }
+  .lift:hover {
+    transform: translateY(-2px);
+  }
 }
 
 ::-webkit-scrollbar {
@@ -27,6 +66,9 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a3b5e;
-  border-radius: 6px;
+  background: #243149;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2f3f5c;
 }

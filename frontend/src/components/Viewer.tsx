@@ -50,7 +50,7 @@ export default function Viewer({ study }: { study: Study }) {
   }
 
   return (
-    <div className="rounded-xl border border-edge bg-black/60 overflow-hidden">
+    <div className="rounded-2xl border border-edge edge-hl shadow-soft bg-black/60 overflow-hidden">
       <div
         className="relative aspect-square w-full select-none overflow-hidden bg-black"
         onWheel={onWheel}

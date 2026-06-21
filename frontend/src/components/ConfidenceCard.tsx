@@ -23,7 +23,7 @@ export default function ConfidenceCard({
   const label = (BAND_LABEL[band] ?? BAND_LABEL.Moderate)[lang];
 
   return (
-    <div className="rounded-xl border border-edge bg-panel p-4">
+    <div className="rounded-2xl border border-edge edge-hl bg-panel p-4">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
           {lang === "sq" ? "Besueshmëria e AI" : "AI Confidence"}

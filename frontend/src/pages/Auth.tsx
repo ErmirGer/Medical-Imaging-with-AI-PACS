@@ -88,7 +88,7 @@ export default function Auth() {
           AI medical imaging &amp; PACS
         </p>
 
-        <div className="overflow-hidden rounded-2xl border border-edge bg-panel/60">
+        <div className="overflow-hidden rounded-2xl border border-edge edge-hl shadow-soft bg-panel/60">
           <div className="h-1 w-full bg-brand-gradient" />
           <div className="p-6">
           {/* login/signup toggle */}

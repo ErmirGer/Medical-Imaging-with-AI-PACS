@@ -56,7 +56,7 @@ export default function Worklist() {
             : "No scans on file yet. Your studies will appear here once a doctor uploads them."}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-edge">
+        <div className="overflow-hidden rounded-2xl border border-edge edge-hl shadow-soft">
           <table className="w-full text-sm">
             <thead className="bg-panel text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
