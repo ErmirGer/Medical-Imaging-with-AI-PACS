@@ -18,8 +18,36 @@ export interface UploadMeta {
   smoker?: boolean;
 }
 
-export const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE ?? "http://localhost:8000";
+/**
+ * Resolve the backend base URL at RUNTIME (not baked at build time), so the
+ * Vercel-hosted frontend can point at any backend — e.g. a local backend exposed
+ * through a tunnel whose URL changes — without rebuilding.
+ *
+ * Priority: ?api=<url> in the URL (persisted) → saved override → VITE_API_BASE → localhost.
+ * On the live site, visit once with `?api=https://<your-tunnel>` to connect.
+ */
+function resolveApiBase(): string {
+  const strip = (s: string) => s.replace(/\/+$/, "");
+  if (typeof window !== "undefined") {
+    try {
+      const u = new URL(window.location.href);
+      const q = u.searchParams.get("api");
+      if (q) {
+        localStorage.setItem("radguard_api_base", strip(q));
+        u.searchParams.delete("api");
+        window.history.replaceState({}, "", u.toString());
+      }
+      const saved = localStorage.getItem("radguard_api_base");
+      if (saved) return strip(saved);
+    } catch {
+      /* non-browser / storage blocked */
+    }
+  }
+  const env = (import.meta as any).env?.VITE_API_BASE;
+  return env ? strip(String(env)) : "http://localhost:8000";
+}
+
+export const API_BASE = resolveApiBase();
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
