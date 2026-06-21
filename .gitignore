@@ -29,3 +29,9 @@ Thumbs.db
 /emergency_board.png
 /sse_toast.png
 data/samples/_test_*.png
+
+# demo video intermediates (regenerable); the final mp4 is committed
+demo/shots/
+demo/clips/
+demo/vo/
+demo/_frame_check.png
