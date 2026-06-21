@@ -68,6 +68,13 @@ The challenge names NIH Chest X-Ray, RSNA Pneumonia, VinBigData, and synthetic D
 - **Any modality** — uploads that aren't chest X-ray (hand/CT/MRI/ultrasound) are
   analyzed by Claude vision (modality + region detected from the image); chest
   X-ray additionally gets the specialized model + Grad-CAM heatmap.
+- **MedGemma (optional)** — Google's open-weights medical imaging model can do the
+  scan analysis instead, with Claude still writing the bilingual report. It's
+  reached via an OpenAI-compatible endpoint; set `MEDGEMMA_BASE_URL` +
+  `MEDGEMMA_API_KEY` + `MEDGEMMA_MODEL` (see `.env.example` for HF Inference
+  Endpoint / Vertex AI / self-hosted vLLM URLs). When set, MedGemma extracts the
+  findings/modality/risk and Claude writes the impression & recommendation; chest
+  X-rays still get the Grad-CAM heatmap. Blank → the built-in analyzers run.
 
 ## Where uploads are stored (persistence)
 

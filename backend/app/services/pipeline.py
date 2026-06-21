@@ -10,7 +10,7 @@ import uuid
 from pathlib import Path
 
 from ..config import settings
-from . import inference, report, vision
+from . import inference, medgemma, report, vision
 from .dicom import png_to_dicom_bytes, push_to_orthanc
 
 log = logging.getLogger("radguard.pipeline")
@@ -18,6 +18,21 @@ log = logging.getLogger("radguard.pipeline")
 
 class ImageRejected(Exception):
     """Raised when an upload cannot be analyzed (not medical / too low quality)."""
+
+
+def _reject_if_bad(result: dict | None) -> None:
+    """Quality / medical gate shared by every analyzer."""
+    if result is None:
+        return
+    if not result.get("is_medical", True):
+        raise ImageRejected(
+            "This does not appear to be a medical image, so it was not analyzed."
+        )
+    if result.get("quality") == "poor":
+        why = result.get("quality_issue") or "the image is too low quality to read reliably"
+        raise ImageRejected(
+            f"The image cannot be analyzed: {why}. Please upload a clearer image."
+        )
 
 STORAGE = Path(__file__).resolve().parents[2] / "storage"
 IMAGES_DIR = STORAGE / "images"
@@ -55,29 +70,79 @@ def process(
     except Exception as exc:
         log.warning("could not read image dimensions: %s", exc)
 
-    # 1. Vision triage: figure out what this image actually IS (modality, body
-    #    region, whether it's a chest X-ray) before assuming the chest model applies.
-    vis = vision.analyze(src_path, patient, clinical)
+    original_png = str(IMAGES_DIR / f"{token}_original.png")
+    heatmap_png = str(IMAGES_DIR / f"{token}_heatmap.png")
 
-    # 1b. Quality / medical gate — refuse to fabricate an analysis on bad input.
-    if vis is not None:
-        if not vis.get("is_medical", True):
-            raise ImageRejected(
-                "This does not appear to be a medical image, so it was not analyzed."
-            )
-        if vis.get("quality") == "poor":
-            why = vis.get("quality_issue") or "the image is too low quality to read reliably"
-            raise ImageRejected(
-                f"The image cannot be analyzed: {why}. Please upload a clearer image."
-            )
+    # 1. Image analysis. If MedGemma is configured it does the scan analysis
+    #    (modality/region/findings/risk); otherwise the built-in analyzers run.
+    med = medgemma.analyze(src_path, patient, clinical) if medgemma.is_enabled() else None
+    if med is not None:
+        _reject_if_bad(med)
+        analysis_source = "medgemma"
+        is_chest = med["is_chest_xray"]
+        region = med["body_region"]
+        modality = medgemma.modality_to_dicom(med["modality"])
+        driver = med["driver"]
+        probs = {f["name"]: f["probability"] for f in med["findings"]}
+        try:
+            inference.save_display_png(src_path, original_png)
+        except Exception as exc:
+            log.warning("display png failed: %s", exc)
+            original_png = src_path
+        heatmap_png = original_png
+        # chest: still produce the Grad-CAM localization overlay (visual only)
+        if is_chest:
+            try:
+                cam_probs = inference.predict(src_path)
+                inference.heatmap(
+                    src_path, max(cam_probs, key=cam_probs.get), heatmap_png
+                )
+            except Exception as exc:
+                log.warning("medgemma chest heatmap failed: %s", exc)
+                heatmap_png = original_png
+        risk = {
+            "score": med["risk_score"],
+            "base_score": med["risk_score"],
+            "clinical_adjustment": 0,
+            "clinical_factors": [],
+            "band": med["risk_band"],
+            "driver": driver,
+            "top_findings": [
+                {
+                    "pathology": f["name"],
+                    "pathology_sq": inference.PATHOLOGY_SQ.get(f["name"], f["name"]),
+                    "probability": f["probability"],
+                    "contribution": f["probability"],
+                    "severity": f.get("severity", "mild"),
+                }
+                for f in med["findings"][:5]
+            ],
+        }
+        # MedGemma analyzes the image; Claude writes the bilingual report
+        rep = report.generate(patient, risk, risk["top_findings"], clinical)
+        top_finding_sq = inference.PATHOLOGY_SQ.get(driver, driver)
+        return {
+            "probs": probs,
+            "risk": risk,
+            "original_png": original_png,
+            "heatmap_png": heatmap_png,
+            "pacs": _archive(src_path, patient, study_uid, modality),
+            "report": rep,
+            "clinical": clinical or {},
+            "modality": modality,
+            "region": region,
+            "analysis_source": analysis_source,
+            "top_finding_sq": top_finding_sq,
+        }
+
+    # 1b. Vision triage: figure out what this image actually IS before assuming chest.
+    vis = vision.analyze(src_path, patient, clinical)
+    _reject_if_bad(vis)
 
     is_chest = vis["is_chest_xray"] if vis else True  # no key/failed -> assume CXR
     region = vis["body_region"] if vis else ""
     if vis:
         modality = vision.modality_to_dicom(vis["modality"])
-
-    original_png = str(IMAGES_DIR / f"{token}_original.png")
-    heatmap_png = str(IMAGES_DIR / f"{token}_heatmap.png")
 
     if is_chest:
         # --- Chest X-ray: specialized torchxrayvision model + Grad-CAM + deterministic risk
@@ -137,27 +202,7 @@ def process(
         top_finding_sq = vis.get("driver_sq", vis["driver"])
 
     # 5. PNG -> DICOM + push to Orthanc
-    pacs = {"study_instance_uid": "", "orthanc_id": "", "archived": False}
-    try:
-        dicom_bytes, sop_study_uid = png_to_dicom_bytes(
-            src_path, patient["name"], patient["id"], study_uid, modality
-        )
-        res = push_to_orthanc(dicom_bytes, settings.ORTHANC_URL)
-        pacs = {
-            "study_instance_uid": sop_study_uid,
-            "orthanc_id": res.get("ParentStudy", res.get("ID", "")),
-            "archived": True,
-        }
-    except Exception as exc:
-        log.warning("orthanc archive failed (PACS offline?): %s", exc)
-        # still record the UID we generated so the study is PACS-ready
-        try:
-            _, sop_study_uid = png_to_dicom_bytes(
-                src_path, patient["name"], patient["id"], study_uid, modality
-            )
-            pacs["study_instance_uid"] = sop_study_uid
-        except Exception:
-            pass
+    pacs = _archive(src_path, patient, study_uid, modality)
 
     return {
         "probs": probs,
@@ -172,3 +217,29 @@ def process(
         "analysis_source": analysis_source,
         "top_finding_sq": top_finding_sq,
     }
+
+
+def _archive(src_path: str, patient: dict, study_uid: str | None, modality: str) -> dict:
+    """PNG -> DICOM (Secondary Capture) -> Orthanc. Degrades gracefully if PACS
+    is offline, still returning the generated StudyInstanceUID."""
+    pacs = {"study_instance_uid": "", "orthanc_id": "", "archived": False}
+    try:
+        dicom_bytes, sop_study_uid = png_to_dicom_bytes(
+            src_path, patient["name"], patient["id"], study_uid, modality
+        )
+        res = push_to_orthanc(dicom_bytes, settings.ORTHANC_URL)
+        pacs = {
+            "study_instance_uid": sop_study_uid,
+            "orthanc_id": res.get("ParentStudy", res.get("ID", "")),
+            "archived": True,
+        }
+    except Exception as exc:
+        log.warning("orthanc archive failed (PACS offline?): %s", exc)
+        try:
+            _, sop_study_uid = png_to_dicom_bytes(
+                src_path, patient["name"], patient["id"], study_uid, modality
+            )
+            pacs["study_instance_uid"] = sop_study_uid
+        except Exception:
+            pass
+    return pacs
