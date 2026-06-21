@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Database, Sparkles } from "lucide-react";
+import { Database, Sparkles, ShieldAlert } from "lucide-react";
 import { api } from "../api";
 import RiskBadge from "../components/RiskBadge";
 import ClinicalSignals from "../components/ClinicalSignals";
@@ -76,7 +76,17 @@ export default function Worklist() {
                     <ClinicalSignals clinical={s.clinical} size="xs" />
                   </td>
                   <td className="px-4 py-3">
-                    <RiskBadge score={s.risk_score} band={s.risk_band} />
+                    <div className="flex items-center gap-2">
+                      <RiskBadge score={s.risk_score} band={s.risk_band} />
+                      {s.confidence?.double_check && (
+                        <span
+                          title={`AI confidence ${s.confidence.score}% — double-check recommended`}
+                          className="inline-flex items-center gap-1 rounded-md border border-medium/40 bg-medium/10 px-1.5 py-0.5 text-[10px] font-medium text-medium"
+                        >
+                          <ShieldAlert size={11} /> check
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     {s.pacs.archived ? (

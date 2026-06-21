@@ -121,6 +121,9 @@ def process(
         # MedGemma analyzes the image; Claude writes the bilingual report
         rep = report.generate(patient, risk, risk["top_findings"], clinical)
         top_finding_sq = inference.PATHOLOGY_SQ.get(driver, driver)
+        confidence = inference.confidence_payload(
+            med.get("confidence", 60), reason=med.get("confidence_reason")
+        )
         return {
             "probs": probs,
             "risk": risk,
@@ -133,6 +136,7 @@ def process(
             "region": region,
             "analysis_source": analysis_source,
             "top_finding_sq": top_finding_sq,
+            "confidence": confidence,
         }
 
     # 1b. Vision triage: figure out what this image actually IS before assuming chest.
@@ -162,6 +166,7 @@ def process(
             heatmap_png = original_png
         rep = report.generate(patient, risk, risk["top_findings"], clinical)
         top_finding_sq = inference.PATHOLOGY_SQ.get(driver, driver)
+        confidence = inference.analysis_confidence(list(probs.values()))
     else:
         # --- Anything else (hand X-ray, CT, MRI, ultrasound...): Claude vision is
         #     the analyzer. No chest model, no Grad-CAM (would be meaningless).
@@ -200,6 +205,17 @@ def process(
             "recommendation_sq": vis["recommendation_sq"],
         }
         top_finding_sq = vis.get("driver_sq", vis["driver"])
+        confidence = (
+            inference.confidence_payload(
+                vis.get("confidence", 60),
+                reason=vis.get("confidence_reason"),
+                reason_sq=vis.get("confidence_reason_sq"),
+            )
+            if vis
+            else inference.analysis_confidence(
+                [f["probability"] for f in risk["top_findings"]]
+            )
+        )
 
     # 5. PNG -> DICOM + push to Orthanc
     pacs = _archive(src_path, patient, study_uid, modality)
@@ -216,6 +232,7 @@ def process(
         "region": region,
         "analysis_source": analysis_source,
         "top_finding_sq": top_finding_sq,
+        "confidence": confidence,
     }
 
 

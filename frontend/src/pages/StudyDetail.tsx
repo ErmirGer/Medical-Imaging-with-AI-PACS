@@ -20,6 +20,7 @@ import RiskBadge from "../components/RiskBadge";
 import FindingsList from "../components/FindingsList";
 import ReportPanel from "../components/ReportPanel";
 import PopulationChart from "../components/PopulationChart";
+import ConfidenceCard from "../components/ConfidenceCard";
 import type { Lang } from "../types";
 
 export default function StudyDetail() {
@@ -174,6 +175,10 @@ export default function StudyDetail() {
         </div>
 
         <div className="space-y-6">
+          {study.confidence && (
+            <ConfidenceCard confidence={study.confidence} lang={lang} />
+          )}
+
           <div className="rounded-xl border border-edge bg-panel p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">

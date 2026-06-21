@@ -44,6 +44,14 @@ class AlertOut(BaseModel):
     acknowledged: bool = False
 
 
+class ConfidenceOut(BaseModel):
+    score: int = 0  # 0-100, how sure the AI is the analysis is correct
+    band: str = ""  # High | Moderate | Low
+    note: str = ""
+    note_sq: str = ""
+    double_check: bool = False
+
+
 class ClinicalOut(BaseModel):
     symptoms: str = ""
     temperature: float = 0.0
@@ -71,5 +79,6 @@ class StudyOut(BaseModel):
     report: ReportOut
     pacs: PacsOut
     image_urls: ImageUrls
+    confidence: Optional[ConfidenceOut] = None
     clinical: Optional[ClinicalOut] = None
     alert: Optional[AlertOut] = None

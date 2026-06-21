@@ -104,7 +104,15 @@ def analyze(path: str, patient: dict | None = None, clinical: dict | None = None
             '"driver_sq": string, '
             '"impression_en": string, "impression_sq": string, '
             '"recommendation_en": string, "recommendation_sq": string, '
-            '"quality": "good" | "poor", "quality_issue": string}.\n'
+            '"quality": "good" | "poor", "quality_issue": string, '
+            '"confidence": integer 0-100, "confidence_reason": string, '
+            '"confidence_reason_sq": string}.\n'
+            "confidence = how certain you are this analysis is CORRECT, calibrated "
+            "honestly: lower it when the image is limited, the findings are subtle "
+            "or ambiguous, the appearance is atypical, or it is outside your "
+            "expertise; higher only when findings are clear and unambiguous. "
+            "confidence_reason (EN) and confidence_reason_sq (Albanian) briefly say "
+            "why, and whether a specialist should double-check. "
             "Set severity to how clinically concerning each finding is: 'none' for "
             "normal/reassuring observations (e.g. 'no fracture', 'normal "
             "alignment'), up to 'severe' for urgent pathology. "
@@ -195,10 +203,19 @@ def _normalize(d: dict) -> dict:
     )
     quality = "poor" if str(d.get("quality", "good")).lower() == "poor" else "good"
 
+    try:
+        conf = int(round(float(d.get("confidence", 60) or 60)))
+    except (TypeError, ValueError):
+        conf = 60
+    conf = max(0, min(100, conf))
+
     return {
         "is_medical": bool(d.get("is_medical", True)),
         "quality": quality,
         "quality_issue": str(d.get("quality_issue", "") or "").strip(),
+        "confidence": conf,
+        "confidence_reason": str(d.get("confidence_reason", "") or "").strip(),
+        "confidence_reason_sq": str(d.get("confidence_reason_sq", "") or "").strip(),
         "modality": modality,
         "body_region": str(d.get("body_region", "") or "").strip(),
         "is_chest_xray": bool(d.get("is_chest_xray", False)),

@@ -95,7 +95,11 @@ def analyze(path: str, patient: dict | None = None, clinical: dict | None = None
             '"findings": [{"name": string, "probability": number 0-1, '
             '"severity": "none" | "mild" | "moderate" | "severe"}], '
             '"risk_score": integer 0-100, "risk_band": "Low" | "Medium" | "High", '
-            '"driver": string, "quality": "good" | "poor", "quality_issue": string}.\n'
+            '"driver": string, "quality": "good" | "poor", "quality_issue": string, '
+            '"confidence": integer 0-100, "confidence_reason": string}.\n'
+            "confidence = how certain you are this analysis is CORRECT, calibrated "
+            "honestly (lower for limited/ambiguous/atypical images); "
+            "confidence_reason briefly says why and whether to double-check. "
             "severity = how clinically concerning each finding is ('none' for "
             "normal/reassuring observations). quality='poor' if too blurry/dark/"
             "cropped/low-res to read. Up to 6 findings, most significant first; if "
@@ -161,10 +165,18 @@ def _normalize(d: dict) -> dict:
     if band is None:
         band = "High" if score >= 70 else "Medium" if score >= 40 else "Low"
 
+    try:
+        conf = int(round(float(d.get("confidence", 60) or 60)))
+    except (TypeError, ValueError):
+        conf = 60
+    conf = max(0, min(100, conf))
+
     return {
         "is_medical": bool(d.get("is_medical", True)),
         "quality": "poor" if str(d.get("quality", "good")).lower() == "poor" else "good",
         "quality_issue": str(d.get("quality_issue", "") or "").strip(),
+        "confidence": conf,
+        "confidence_reason": str(d.get("confidence_reason", "") or "").strip(),
         "modality": modality,
         "body_region": str(d.get("body_region", "") or "").strip(),
         "is_chest_xray": bool(d.get("is_chest_xray", False)),

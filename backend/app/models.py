@@ -52,6 +52,13 @@ class Study(SQLModel, table=True):
     top_finding: str = ""
     top_finding_sq: str = ""  # Albanian name of the risk driver
 
+    # How confident the AI is that the analysis is correct (0-100)
+    confidence: int = 0
+    confidence_band: str = ""  # High | Moderate | Low
+    confidence_note: str = ""
+    confidence_note_sq: str = ""
+    double_check: bool = False  # recommend a radiologist double-check
+
     report_en: str = ""
     report_sq: str = ""
     recommendation_en: str = ""

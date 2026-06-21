@@ -16,6 +16,7 @@ from ..models import Alert, Finding, Patient, Study
 from ..schemas import (
     AlertOut,
     ClinicalOut,
+    ConfidenceOut,
     FindingOut,
     ImageUrls,
     PacsOut,
@@ -94,6 +95,13 @@ def to_study_out(study: Study, session) -> StudyOut:
             original=f"/api/studies/{study.id}/image?type=original",
             heatmap=f"/api/studies/{study.id}/image?type=heatmap",
         ),
+        confidence=ConfidenceOut(
+            score=study.confidence,
+            band=study.confidence_band or "Moderate",
+            note=study.confidence_note,
+            note_sq=study.confidence_note_sq or study.confidence_note,
+            double_check=study.double_check,
+        ),
         clinical=ClinicalOut(
             symptoms=study.symptoms,
             temperature=study.temperature,
@@ -123,6 +131,7 @@ def persist_study(results: dict, patient: dict, session) -> Study:
     risk = results["risk"]
     rep = results["report"]
     clinical = results.get("clinical") or {}
+    conf = results.get("confidence") or {}
     study = Study(
         patient_id=patient["id"],
         modality=results.get("modality", "DX"),
@@ -144,6 +153,11 @@ def persist_study(results: dict, patient: dict, session) -> Study:
         risk_band=risk["band"],
         top_finding=risk["driver"],
         top_finding_sq=results.get("top_finding_sq", "") or risk["driver"],
+        confidence=conf.get("score", 0),
+        confidence_band=conf.get("band", ""),
+        confidence_note=conf.get("note", ""),
+        confidence_note_sq=conf.get("note_sq", ""),
+        double_check=bool(conf.get("double_check", False)),
         report_en=rep["impression_en"],
         report_sq=rep["impression_sq"],
         recommendation_en=rep["recommendation_en"],

@@ -133,6 +133,24 @@ export default function PrintReport() {
           <Row label="Primary driver" value={study.top_finding} />
         </Section>
 
+        {study.confidence && (
+          <Section title="AI Confidence">
+            <Row
+              label="Confidence"
+              value={`${study.confidence.score}% — ${study.confidence.band}`}
+            />
+            <Row
+              label="Recommendation"
+              value={
+                study.confidence.double_check
+                  ? "Radiologist double-check recommended"
+                  : "AI is confident in this analysis"
+              }
+            />
+            <Row label="Note" value={study.confidence.note} />
+          </Section>
+        )}
+
         <Section title="Findings (AI confidence)">
           <table className="w-full text-sm">
             <thead>

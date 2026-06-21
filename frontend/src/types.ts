@@ -11,6 +11,14 @@ export interface Finding {
   population_rate?: number | null;
 }
 
+export interface Confidence {
+  score: number; // 0-100
+  band: "High" | "Moderate" | "Low" | string;
+  note: string;
+  note_sq: string;
+  double_check: boolean;
+}
+
 export interface Clinical {
   symptoms: string;
   temperature: number;
@@ -64,6 +72,7 @@ export interface Study {
   report: Report;
   pacs: Pacs;
   image_urls: { original: string; heatmap: string };
+  confidence?: Confidence | null;
   clinical?: Clinical | null;
   alert: AlertInfo | null;
 }

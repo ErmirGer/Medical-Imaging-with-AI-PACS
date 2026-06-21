@@ -158,6 +158,67 @@ PATHOLOGY_SQ = {
 }
 
 
+def confidence_payload(
+    score: int, borderline: int = 0, reason: str | None = None, reason_sq: str | None = None
+) -> dict:
+    """Wrap a 0-100 confidence into band + bilingual note + double-check flag.
+
+    Shared by every analyzer so the doctor-facing meaning is consistent.
+    """
+    score = max(0, min(100, int(round(score))))
+    band = "High" if score >= 70 else "Moderate" if score >= 50 else "Low"
+    double_check = band == "Low"  # only Low gets the strong double-check flag
+    if reason:
+        note, note_sq = reason, (reason_sq or reason)
+    elif band == "High":
+        note = "Findings are decisive — high-confidence analysis."
+        note_sq = "Gjetjet janë të qarta — analizë me besueshmëri të lartë."
+    elif band == "Moderate":
+        note = (
+            f"{borderline} finding(s) sit near the decision threshold — "
+            "verify the main finding."
+        )
+        note_sq = (
+            f"{borderline} gjetje afër pragut të vendimit — "
+            "verifikoni gjetjen kryesore."
+        )
+    else:
+        note = "Several borderline findings — radiologist double-check recommended."
+        note_sq = "Disa gjetje kufitare — rekomandohet rishikim nga radiologu."
+    return {
+        "score": score,
+        "band": band,
+        "note": note,
+        "note_sq": note_sq,
+        "double_check": double_check,
+    }
+
+
+def analysis_confidence(probabilities: list[float]) -> dict:
+    """Deterministic confidence for the chest model from its full probability
+    vector — how sure it is the analysis is correct.
+
+    Signals:
+    - Leading finding's decisiveness: a driver at 0.9 is a confident positive;
+      at 0.55 it's a coin-flip. If nothing exceeds ~0.4 the study is a confident
+      negative (clearly normal).
+    - Competing ambiguity: several findings clustered in the 0.40-0.65 band mean
+      the model can't tell them apart -> lower confidence, double-check.
+    """
+    ps = [float(p) for p in probabilities] or [0.5]
+    pmax = max(ps)
+    near = sum(1 for p in ps if 0.40 < p < 0.65)  # ambiguous cluster
+    if pmax < 0.40:
+        score = 88.0  # nothing stands out -> confident normal
+    else:
+        score = 50.0 + (pmax - 0.5) * 130.0  # decisiveness of leading finding
+    # a few competing findings is normal; only a large ambiguous cluster hurts,
+    # and the penalty is capped so the score still reflects the leading finding
+    score -= min(20.0, 3.0 * max(0, near - 3))
+    score = max(8, min(97, round(score)))
+    return confidence_payload(score, borderline=near)
+
+
 def severity_from_prob(p: float) -> str:
     """Map a chest pathology probability to a severity band for UI coloring.
 
